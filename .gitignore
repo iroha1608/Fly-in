@@ -1,0 +1,17 @@
+# Project specific (Mandatory rule)
+
+### Python ###
+*.py[cod]
+*$py.class
+
+# Environments
+.env
+.venv
+env/
+venv/
+
+# _cache
+__pycache__/
+*_cache
+.mypy_cache/
+.ruff_cache/
