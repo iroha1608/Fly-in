@@ -20,11 +20,13 @@
 1. [💡Description](#1-Description)
 2. [✅Instructions](#2-Instructions)
 3. [⛏Additional sections](#3-Additional-sections)
+	1. [My algorithm choices and implementation strategy](3-1.-My-algorithm-choices-and-implementation-strategy.)
+	2. [The visual representation features and how they enhance the user experience.](3-2. The visual representation features and how they enhance the user experience.)
 4. [🎁Bonus](#4-Bonus)
 5. [🌈Resources](#5-Resources)
-	5-1. [URL](#5-1-URL)
-	5-2. [AI Usage](#5-2-AI-Usage)
-  
+	1. [URL](#5-1-URL)
+	2. [AI Usage](#5-2-AI-Usage)
+
 
 ## 💡1. Description
 Design and implement an efficient drone routing system that navigates multiple autonomous drones from a central base to a target location through a dynamic network.  
@@ -32,6 +34,7 @@ This Python project challenges learners to create a custom pathfinding algorithm
 The system must parse complex map files, implement object-oriented design principles, and optimize for minimal simulation turns.  
 Learners will develop skills in graph algorithms, concurrent pathfinding, and performance optimization while working with real-world constraints such as restricted zones, bottlenecks, and deadlock prevention.  
 (from the project PDF)  
+
 
 ## ✅2.Instructions
 
@@ -70,7 +73,22 @@ make lint-strict
 ```
 
 ## ⛏3. Additional sections
+
+
+### 3-1. My algorithm choices and implementation strategy.
+
+
+### 3-2. The visual representation features and how they enhance the user experience.
+
 ## 🎁4. Bonus
+
+
 ## 🌈5. Resources
+
+
 ### 5-1. URL
+
+
 ### 5-2. AI Usage
+
+
