@@ -1,0 +1,14 @@
+# 最小構成のテストマップ
+nb_drones: 2
+start_hub: start 0 0 [color=green]
+end_hub: goal 10 0 [color=red]
+
+# 中間ハブ
+hub: normal_hub 5 0 [zone=normal max_drones=2]
+hub: danger_zone 5 5 [zone=restricted max_drones=1]
+
+# コネクション
+connection: start-normal_hub
+connection: normal_hub-goal
+connection: start-danger_zone [max_link_capacity=1]
+connection: danger_zone-goal
