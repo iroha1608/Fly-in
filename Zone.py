@@ -1,7 +1,6 @@
-from collections import defautdict
+from collections import defaultdict
 from dataclasses import dataclass, field
 
-from Connection import Connection
 
 class Zone:
     """
@@ -13,9 +12,11 @@ class Zone:
         color: str | None = None,
         max_drones: float = 1.0
     ) -> None:
+        from Connection import Connection
         self.name = name
         self.x = x
         self.y = y
+        self.zone_type = zone_type
         self.color = color
         self.max_drones = max_drones
         self.reservations: defaultdict[int, int] = defaultdict(int)
