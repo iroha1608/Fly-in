@@ -32,6 +32,24 @@
 システムは、複雑なマップファイルを解析し、オブジェクト指向設計の原則を実装し、シミュレーションのターン数を最小限に抑えるよう最適化する必要があります。 
 学習者は、制限区域、ボトルネック、デッドロック防止といった現実世界の制約に対処しながら、グラフアルゴリズム、並行経路探索、およびパフォーマンス最適化のスキルを習得します。  
 （プロジェクトPDFより）  
+```
+|
+| - Makefile
+| - README.md
+| - README_ja.md
+| - .images
+| - .gitignore
+| - .flake8
+| - main.py
+| - Zone.py
+| - Connection.py
+| - Graph.py
+| - Parser.py
+| - SearchState.py
+| - PathFinder.py
+| - Vizualizer.py
+| - tests
+```
 
 ## ✅2. 手順
 
