@@ -1,8 +1,6 @@
-UV				:= uv
-PYTHON		:= python3 -m
-SRC_DIR		:= src
-TEST_DIR	:= tests
-RM				:= rm -rf
+UV		:= uv
+PYTHON	:= python3
+RM		:= rm -rf
 
 # Mandatory requirements
 # install, run, debug, clean, lint, lint-strict
@@ -22,7 +20,7 @@ setup:
 	$(UV) venv
 
 run:
-	$(UV) run $(PYTHON) $(SRC_DIR)
+	$(UV) run $(PYTHON) main.py
 
 debug:
 	$(UV) run $(PYTHON) pdb -m $(SRC_DIR)
@@ -48,12 +46,5 @@ lint-strict:
 	- $(UV) run flake8 $(SRC_DIR)
 	- $(UV) run mypy --strict $(SRC_DIR)
 
-test:
-	$(UV) run pytest $(TEST_DIR)
 
-lint-test:
-	- $(UV) run flake8 $(TEST_DIR)
-	- $(UV) run mypy $(TEST_DIR) --warn-return-any --warn-unused-ignores --ignore-missing-imports --disallow-untyped-defs --check-untyped-defs
-	- $(UV) run ruff check $(TEST_DIR)
-
-.PHONY: install run debug clean lint lint-strict all uv setup llm fclean test lint-test
+.PHONY: install run debug clean lint lint-strict all uv setup fclean
