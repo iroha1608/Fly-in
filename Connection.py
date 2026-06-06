@@ -1,4 +1,4 @@
-from collections import defautdict
+from collections import defaultdict
 
 from Zone import Zone
 
