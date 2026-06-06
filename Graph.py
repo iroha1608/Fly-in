@@ -1,13 +1,13 @@
 from Zone import Zone
 from Connection import Connection
 
-class Gragh:
+class Graph:
     """
     """
     def __init__(self) -> None:
         self.nb_drones: int = 0
         self.start_zone: Zone | None = None
-        self.end_zone Zone | None = None
+        self.end_zone: Zone | None = None
         self.zones: dict[str, Zone] = {}
 
     def add_zone(self, zone: Zone) -> None:
