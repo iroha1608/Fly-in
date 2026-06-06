@@ -7,7 +7,7 @@ from PathFinder import PathFinder
 
 INFO = "[\33[32mINFO\33[0m]: "
 ERROR = "[\33[31mERROR\33[0m]: "
-WARNING = "[\33[33mINFO\33[0m]: "
+WARNING = "[\33[33mWARNING\33[0m]: "
 TIME = 0.2
 
 def main() -> None:
