@@ -1,3 +1,7 @@
+"""
+    Parserから受け取った情報から
+    各ハブの情報とターン毎の予約状況を管理する。
+"""
 from collections import defaultdict
 from dataclasses import dataclass, field
 
@@ -35,5 +39,7 @@ class Zone:
     def reserve(self, turn: int) -> None:
         """
             指定したターンにZoneを予約。
+            Args:
+                turn: 指定したターン
         """
         self.reservations[turn] += 1
