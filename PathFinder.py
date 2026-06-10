@@ -25,7 +25,7 @@ class PathFinder:
             path_history=[]
         ))
 
-        visited: dict[tuple[int, str], int] = {}
+        visited: dict[tuple[int, str], float] = {}
 
         while queue:
             state = heapq.heappop(queue)
@@ -46,7 +46,7 @@ class PathFinder:
             # その場で待機判定
             if state.current_zone.can_enter(next_turn):
                 heapq.heappush(queue, SearchState(
-                    cost=state.cost + 1,
+                    cost=state.cost + 1.0,
                     turn=next_turn,
                     current_zone=state.current_zone,
                     path_history=state.path_history + [state.current_zone.name]
@@ -65,7 +65,7 @@ class PathFinder:
                 elif target.zone_type == "restricted":
                     if connection.can_enter(next_turn) and target.can_enter(state.turn + 2):
                         heapq.heappush(queue, SearchState(
-                            cost=state.cost + 2,
+                            cost=state.cost + 2.0,
                             turn=state.turn + 2,
                             current_zone=target,
                             path_history=state.path_history + [connection_name, target.name]
@@ -73,8 +73,9 @@ class PathFinder:
                 # "type=normal, priority": 1ターン消費
                 else:
                     if connection.can_enter(next_turn) and target.can_enter(next_turn):
+                        move_cost = 0.99 if target.zone_type == "priority" else 1.0
                         heapq.heappush(queue, SearchState(
-                            cost=state.cost + 1,
+                            cost=state.cost + move_cost,
                             turn=state.turn + 1,
                             current_zone=target,
                             path_history=state.path_history + [target.name]

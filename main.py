@@ -3,6 +3,7 @@ import time
 
 from Parser import Parser, CLIConfig , parse_arguments
 from PathFinder import PathFinder
+from Visualizer import colorize
 
 
 INFO = "[\33[32mINFO\33[0m]: "
@@ -66,11 +67,16 @@ def main() -> None:
 
                 # ドローンが動いている場合、出力を追加。
                 if current_location != previous_location:
-                    turn_output.append(f"{d_id}-{current_location}")
+                    if "-" in current_location:
+                        parts = current_location.split("-")
+                        colored_parts = [colorize(p, graph) for p in parts]
+                        colored_location = "-".join(colored_parts)
+                    else:
+                        colored_location = colorize(current_location, graph)
+                    turn_output.append(f"{d_id}-{colored_location}")
 
         if turn_output:
-            print(f"Turn{turn}: ", end="")
-            print(" ".join(turn_output))
+            print(f"Turn{turn}: " + " ".join(turn_output))
 
     time.sleep(TIME)
 
