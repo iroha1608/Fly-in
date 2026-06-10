@@ -1,6 +1,6 @@
 """
-    Command-line interface argument parsing
-    and validation for the function calling application.
+    コマンドラインから受け取った引数をパースし、
+    バリデーションのチェックをする。
 """
 import re
 import math
@@ -15,7 +15,7 @@ from Graph import Graph
 
 class CLIConfig(BaseModel):
     """
-        Configuration model for CLI arguments.
+        コマンドライン引数の情報
     """
     map: Path = Field(
         default=Path("maps/original/test_map.txt"),
@@ -25,24 +25,21 @@ class CLIConfig(BaseModel):
 
 def parse_arguments() -> CLIConfig:
     """
-        Parse command-line arguments and return a validated CLIConfig instance.
+        コマンドライン引数をパースし、CLIConfigで検証し返す。
         Returns:
-            CLIConfig: The validated configuration object
-                                containing the parsed arguments.
+            CLIConfig: パースし検証済みのコマンドライン引数の情報
         Raises:
             ValueError:
-                If any of the provided paths do not have a .json extension.
-            ValidationError: If the provided arguments
-                            do not conform to the CLIConfig model.
+            ValidationError:
         """
     parser = argparse.ArgumentParser(
-        description="Introduction to function calling in LLMs"
+        description=""
     )
 
     parser.add_argument(
         "-m", "--map",
         type=str,
-        help="Path to the input prompts JSON file"
+        help=""
     )
     try:
         # 解析、不正な引数は自動でSystemExitが呼ばれhelpが出る
@@ -104,7 +101,12 @@ class Parser:
                         meta = self.parse_metadata(f"[{parts[1]}]" if len(parts) > 1 else "")
 
                         is_start = line.startswith("start_hub:")
-                        max_drones = math.inf if is_start else float(meta.get("max_drones", 1.0))
+                        is_end = line.startswith("end_hub:")
+                        max_drones = (
+                            math.inf
+                            if (is_start or is_end)
+                            else float(meta.get("max_drones", 1.0))
+                        )
 
                         zone = Zone(
                             name=name,
