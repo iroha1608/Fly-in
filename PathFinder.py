@@ -19,10 +19,11 @@ class PathFinder:
         """
         queue: list[SearchState] = []
         heapq.heappush(queue, SearchState(
-            cost=0,
+            cost=0.0,
             turn=start_turn,
             current_zone=self.graph.start_zone,
-            path_history=[]
+            path_history=[],
+            visited_zones={self.graph.start_zone.name}
         ))
 
         visited: dict[tuple[int, str], float] = {}
@@ -49,26 +50,34 @@ class PathFinder:
                     cost=state.cost + 1.0,
                     turn=next_turn,
                     current_zone=state.current_zone,
-                    path_history=state.path_history + [state.current_zone.name]
+                    path_history=state.path_history + [state.current_zone.name],
+                    visited_zones=state.visited_zones
                 ))
 
             # 隣接Zoneへの移動
             for connection in state.current_zone.connections:
                 target = connection.target_zone
-                connection_name = f"{state.current_zone.name}-{target.name}"
 
                 # "type=blocked": 侵入不可
-                if target.zone_type == "blocked":
+                if target.is_pruned or target.zone_type == "blocked":
+                    continue
+                # 再訪、Uターン不可
+                if target.name in state.visited_zones and target.name != state.current_zone.name:
                     continue
 
+                connection_name = f"{state.current_zone.name}-{target.name}"
+                new_visited = set(state.visited_zones)
+                new_visited.add(target.name)
+
                 # "type=restricted": 2ターン消費かつ2ターン後の予約チェック
-                elif target.zone_type == "restricted":
+                if target.zone_type == "restricted":
                     if connection.can_enter(next_turn) and target.can_enter(state.turn + 2):
                         heapq.heappush(queue, SearchState(
                             cost=state.cost + 2.0,
                             turn=state.turn + 2,
                             current_zone=target,
-                            path_history=state.path_history + [connection_name, target.name]
+                            path_history=state.path_history + [connection_name, target.name],
+                            visited_zones=new_visited
                         ))
                 # "type=normal, priority": 1ターン消費
                 else:
@@ -78,7 +87,8 @@ class PathFinder:
                             cost=state.cost + move_cost,
                             turn=state.turn + 1,
                             current_zone=target,
-                            path_history=state.path_history + [target.name]
+                            path_history=state.path_history + [target.name],
+                            visited_zones=new_visited
                         ))
 
         # ゴールに到達しなかった場合
