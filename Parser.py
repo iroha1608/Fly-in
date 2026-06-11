@@ -134,7 +134,7 @@ class Parser:
 
                 if not self.graph.start_zone or not self.graph.end_zone:
                     raise ValueError(
-                        f"Start or End zone is missing in the map.")
+                        "Start or End zone is missing in the map.")
 
             return self.graph
 
@@ -157,3 +157,32 @@ class Parser:
         except OSError as e:
             raise ValueError(
                 f"OS error occurred while reading {filepath}: {e}") from e
+
+    @staticmethod
+    def prune_dead_end(graph: Graph) -> None:
+        """
+            行き止まりのノードを探索時に含めないように、
+            is_pruned = Trueにする。
+        """
+        while True:
+            removed_any = False
+            for zone in graph.zones.values():
+                # 枝刈り済み、スタート、ゴールはスキップ。
+                if zone.is_pruned or zone == graph.start_zone or zone == graph.end_zone:
+                    continue
+
+                # まだ枝刈りされていない接続先を調べる。
+                active_connections = [
+                    con
+                    for con in zone.connection
+                    if not con.target_zone.is_pruned
+                ]
+
+                # 接続先が来る道しか無い(行き止まり)道は枝切り。
+                if len(active_connections) <= 1:
+                    zone.is_pruned = True
+                    removed_any = True
+
+            # 枝切りが終わったらループ終了。
+            if not removed_any:
+                break
