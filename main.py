@@ -3,7 +3,8 @@ import time
 
 from Parser import Parser, CLIConfig , parse_arguments
 from PathFinder import PathFinder
-from Visualizer import colorize
+from Drone import Drone
+from SimulationEngine import SimulationEngine
 
 
 INFO = "[\33[32mINFO\33[0m]: "
@@ -34,19 +35,22 @@ def main() -> None:
           f" -> Goal: '{graph.end_zone.name}'")
     time.sleep(TIME)
 
+    drones: list[Drone] = []
     pathfinder = PathFinder(graph)
-    all_paths: dict[str, list[str]] = {}
 
     for i in range(1, graph.nb_drones + 1):
-        # SearchStateのpath_historyを取得
         drone_id = f"D{i}"
-        path = pathfinder.find_path_for_single_drone(start_turn=0)
+        drone = Drone(drone_id, graph.start_zone.name)
 
+        # SearchStateのpath_historyを取得
+        path = pathfinder.find_path_for_single_drone(start_turn=0)
         if not path:
             print(f"{ERROR}Drone ID: {drone_id} No Path found to the goal.")
             sys.exit(1)
+
         pathfinder.commit_path(path)
-        all_paths[drone_id] = path
+        drone.set_path(path)
+        drones.append(drone)
 
     print(f"{INFO}Path Found!")
     time.sleep(TIME)
@@ -54,31 +58,8 @@ def main() -> None:
     print("-------------------- Simulation Output --------------------")
     time.sleep(TIME)
 
-    # すべてのドローンの中から、一番多いターン数を取得。
-    max_turns = max(len(p) for p in all_paths.values()) if all_paths else 0
-
-    for turn in range(1, max_turns + 1):
-        turn_output = []
-
-        for d_id, path in all_paths.items():
-            if turn <= len(path):
-                current_location = path[turn - 1]
-                previous_location = path[turn - 2] if turn > 1 else graph.start_zone.name
-
-                # ドローンが動いている場合、出力を追加。
-                if current_location != previous_location:
-                    if "-" in current_location:
-                        parts = current_location.split("-")
-                        colored_parts = [colorize(p, graph) for p in parts]
-                        colored_location = "-".join(colored_parts)
-                    else:
-                        colored_location = colorize(current_location, graph)
-                    turn_output.append(f"{d_id}-{colored_location}")
-
-        if turn_output:
-            print(f"Turn{turn}: " + " ".join(turn_output))
-
-    time.sleep(TIME)
+    engine = SimulationEngine(graph, drones)
+    engine.run_simulation()
 
 
 if __name__ == "__main__":
