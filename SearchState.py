@@ -13,3 +13,4 @@ class SearchState:
     turn: int = field(compare=False)
     current_zone: Zone = field(compare=False)
     path_history: list[str] = field(compare=False)
+    visited_zones: set[str] = field(compare=False)
