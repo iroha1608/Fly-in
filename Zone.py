@@ -25,6 +25,7 @@ class Zone:
         self.max_drones = max_drones
         self.reservations: defaultdict[int, int] = defaultdict(int)
         self.connections: list[Connection] = []
+        self.is_pruned: bool = False
 
     def can_enter(self, turn:int) -> bool:
         """
