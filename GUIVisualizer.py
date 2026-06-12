@@ -35,10 +35,10 @@ class GUIVisualizer:
         # メインウィンドウの作成
         self.root = tk.Tk()
         self.root.title("Fly-in Simulatier")
-        self.root.geometry("1200x800")
+        self.root.geometry("2700x1800")
         self.root.configure(bg="#2D2D2D")
 
-        self.cw, self.ch = 1600, 1200
+        self.cw, self.ch = 2500, 1600
         self.canvas = tk.Canvas(
             self.root,
             width=self.cw,
@@ -169,7 +169,7 @@ class GUIVisualizer:
                     drawn_connections.add(connection_id)
 
         # Zoneの描画
-        r = 20
+        r = 12
         for zone in self.graph.zones.values():
             px, py = self._get_pixel_coords(zone.x, zone.y)
             if zone.is_pruned:
@@ -191,13 +191,32 @@ class GUIVisualizer:
                     outline="#FFFFFF",
                     fill=color, width=2
                 )
-                self.canvas.create_text(
-                    px,
-                    py - 20,
-                    text=zone.name,
-                    fill="#AAAAAA",
-                    font=("Helvetica", 8)
+
+                text_content = zone.name
+                if len(text_content) > 12:
+                    text_content = text_content.replace("restricted", "rest")
+                    text_content = text_content.replace("priority", "pri")
+
+                text_x = px + r + 4
+                text_y = py + r + 4
+                # NW(North-West)に座標を変更
+                temp_text = self.canvas.create_text(
+                    text_x, text_y, text=text_content, font=("Helvetica", 8), anchor=tk.NW
                 )
+                bbox = self.canvas.bbox(temp_text)
+
+                pad = 1
+                self.canvas.create_rectangle(
+                    bbox[0] - pad,
+                    bbox[1] - pad,
+                    bbox[2] + pad,
+                    bbox[3] + pad,
+                    fill="#1E1E1E",
+                    outline="",
+                    tags="text_bg"
+                )
+                self.canvas.tag_raise(temp_text)
+                self.canvas.itemconfig(temp_text, fill="#DDDDDD")
 
     def init_drones(self) -> None:
         start_coords = self._get_location_coords(self.graph.start_zone.name)
@@ -227,7 +246,7 @@ class GUIVisualizer:
             if self.current_turn > self.max_turns:
                 self.turn_label.config(text=f"Turn: {self.max_turns} (Finished)")
                 return
-            self.turn_label.config(f"Turn: {self.current_turn}")
+            self.turn_label.config(text=f"Turn: {self.current_turn}")
             # 指定した時間分待ってから再開
             self.root.after(self.turn_pause_ms, self.animate_turn)
             # 一旦returnし、afterによる呼び出しを待つ
@@ -260,7 +279,7 @@ class GUIVisualizer:
                 current_py + r
             )
 
-        self.current_turn += 1
+        self.current_frame += 1
         # 次のフレームを描画
         self.root.after(self.frame_delay, self.animate_turn)
 
@@ -274,7 +293,3 @@ class GUIVisualizer:
         # 起動後、1秒待機してからオートプレイ開始
         self.root.after(1000, self.animate_turn)
         self.root.mainloop()
-
-if __name__ == "__main__":
-    visualizer = GUIVisualizer()
-    visualizer.start()
