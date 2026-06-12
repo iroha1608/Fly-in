@@ -5,6 +5,7 @@ from Parser import Parser, CLIConfig , parse_arguments
 from PathFinder import PathFinder
 from Drone import Drone
 from SimulationEngine import SimulationEngine
+from GUIVisualizer import GUIVisualizer
 
 
 INFO = "[\33[32mINFO\33[0m]: "
@@ -60,6 +61,10 @@ def main() -> None:
 
     engine = SimulationEngine(graph, drones)
     engine.run_simulation()
+
+    print(f"{INFO}Starting GUI Visualizer...")
+    gui = GUIVisualizer(graph, drones)
+    gui.start()
 
 
 if __name__ == "__main__":

@@ -18,6 +18,7 @@ class TerminalVisualizer:
         "darkred": (139, 0, 0),
         "crimson": (220, 20, 60),
         "pink": (255, 105, 180),
+        "violet": (127, 0, 255),
         "lightgray": (200, 200, 200),
         "darkblue": (0, 0, 139),
         "teal": (0, 128, 128),
