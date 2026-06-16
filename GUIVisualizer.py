@@ -1,6 +1,7 @@
 """tkinterを使用してGUIに描画するGUIVisualizerを提供"""
 import tkinter as tk
 import math
+import colorsys
 from typing import Any
 
 from Graph import Graph
@@ -112,8 +113,11 @@ class GUIVisualizer:
 
         # 残りの処理
         self.drone_shapes = {}
-        self.colormanager = ColorManager()
         self._calculate_scale_and_offset()
+
+        # color=rainbowへの対応
+        self.rainbow_zone_ids = []
+        self.rainbow_hue = 0.0
 
     def toggle_play(self) -> None:
         """再生、一時停止切り替え"""
@@ -255,16 +259,28 @@ class GUIVisualizer:
                     fill="#222222"
                 )
             else:
-                color =self.colormanager.get_hex(zone.color)
-                self.canvas.create_oval(
-                    px - r,
-                    py - r,
-                    px + r,
-                    py + r,
-                    outline="#FFFFFF",
-                    fill=color,
-                    width=2
-                )
+                if zone.color == "rainbow":
+                    oval_id = self.canvas.create_oval(
+                        px - r,
+                        py - r,
+                        px + r,
+                        py + r,
+                        outline="#FFFFFF",
+                        fill="#FFFFFF",
+                        width=2
+                    )
+                    self.rainbow_zone_ids.append(oval_id)
+                else:
+                    color = ColorManager.get_hex(zone.color)
+                    self.canvas.create_oval(
+                        px - r,
+                        py - r,
+                        px + r,
+                        py + r,
+                        outline="#FFFFFF",
+                        fill=color,
+                        width=2
+                    )
 
                 text_content = zone.name
                 if len(text_content) > 12:
@@ -322,7 +338,8 @@ class GUIVisualizer:
             self.current_turn += 1
 
             if self.current_turn > self.max_turns:
-                self.turn_label.config(text=f"Turn: {self.max_turns} (Finished)")
+                self.turn_label.config(
+                    text=f"Turn: {self.max_turns} (Finished)")
                 self.is_playing = False
                 self.btn_play_pause.config(text="Start")
                 return
@@ -364,12 +381,29 @@ class GUIVisualizer:
         # 次のフレームを描画
         self.root.after(self.frame_delay, self.animate_turn)
 
+    def update_rainbow_colors(self) -> None:
+        """rainbowに指定されたZoneの色を更新し続けるループ"""
+        if not self.rainbow_zone_ids:
+            return
+
+        self.rainbow_hue = (self.rainbow_hue + 0.02) % 1.0
+        rgb = colorsys.hls_to_rgb(self.rainbow_hue, 0.5, 1.0)
+        hex_color = f"#{int(rgb[0]*255):02x}{int(rgb[1]*255):02x}{int(rgb[2]*255):02x}"
+
+        for oval_id in self.rainbow_zone_ids:
+            self.canvas.itemconfig(oval_id, fill=hex_color)
+
+        self.root.after(50, self.update_rainbow_colors)
+
     def start(self) -> None:
         """
             Tkinterのメインループの開始。
         """
         self.draw_map()
         self.init_drones()
+
+        # rainbowの描画開始
+        self.update_rainbow_colors()
 
         # 起動後、1秒待機してからオートプレイ開始
         self.root.after(1000, self.animate_turn)
