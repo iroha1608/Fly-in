@@ -242,7 +242,11 @@ class Parser:
                     "Start or End zone is missing in the map."
                 )
 
+            # 枝刈り
+            self.prune_dead_end(self.graph)
+            # Start -> End まで到達可能なマップかチェック
             self._validate_connectivity()
+
             return self.graph
 
         except FileNotFoundError as e:
