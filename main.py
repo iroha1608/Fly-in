@@ -4,11 +4,11 @@ import time
 from Parser import Parser
 from SimulationEngine import SimulationEngine
 
-
 INFO = "[\33[32mINFO\33[0m]: "
 ERROR = "[\33[31mERROR\33[0m]: "
 WARNING = "[\33[33mWARNING\33[0m]: "
 TIME = 0.2
+
 
 def main() -> None:
     print("-------------------- Fly-in System Started --------------------")
@@ -53,4 +53,8 @@ def main() -> None:
     print("-------------------- Fly-in System Finished --------------------")
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        print(f"{WARNING}Program stopped.")
+        sys.exit(1)
