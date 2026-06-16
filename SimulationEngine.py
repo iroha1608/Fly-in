@@ -1,37 +1,52 @@
-from TerminalVisualizer import TerminalVisualizer
-from GUIVisualizer import GUIVisualizer
 from Graph import Graph
 from Drone import Drone
+from PathFinder import PathFinder
+from TerminalVisualizer import TerminalVisualizer
+from GUIVisualizer import GUIVisualizer
+
+INFO = "[\33[32mINFO\33[0m]: "
+WARNING = "[\33[33mWARNING\33[0m]: "
 
 
 class SimulationEngine:
     """
+        Terminal, GUIへの描写をシミュレーションするクラス。
     """
-    def __init__(self, graph: Graph, drones: list[Drone]) -> None:
+    def __init__(self, graph: Graph) -> None:
         self.graph = graph
-        self.drones = drones
-        self.visualizer = TerminalVisualizer(graph)
+        self.drones: list[Drone] = []
+
+    def find_path(self) -> None:
+        """
+            Graphから最短経路を取得する。
+        """
+        pathfinder = PathFinder(self.graph)
+
+        for i in range(1, self.graph.nb_drones + 1):
+            drone_id = f"D{i}"
+            drone = Drone(drone_id, self.graph.start_zone.name)
+
+            # SearchStateのpath_historyを取得
+            path = pathfinder.find_path_for_single_drone(start_turn=0)
+            if not path:
+                raise ValueError(
+                    f"Drone ID: {drone_id} No Path found to the goal."
+                ) from e
+
+            pathfinder.commit_path(path)
+            drone.set_path(path)
+            self.drones.append(drone)
 
     def run_simulation(self) -> None:
-        # すべてのドローンの中から、一番多いターン数を取得。
-        max_turns = max(len(d.planned_path) for d in self.drones) if self.drones else 0
+        """
+            Terminal, GUIへの描画を開始。
+        """
+        # Terminalの描画
+        print(f"{INFO}Starting Terminal Visualizer...")
+        cli = TerminalVisualizer(self.graph, self.drones)
+        cli.start()
 
-        for turn in range(1, max_turns + 1):
-            turn_output = []
-
-            for drone in self.drones:
-                if drone.has_moved(turn):
-                    current_location = drone.get_location(turn)
-
-                    if "-" in current_location:
-                        parts = current_location.split("-")
-                        colored_parts = [self.visualizer.colorize(p) for p in parts]
-                        colored_location = "-".join(colored_parts)
-
-                    else:
-                        colored_location = self.visualizer.colorize(current_location)
-
-                    turn_output.append(f"{drone.id}-{colored_location}")
-
-            if turn_output:
-                print(f"Turn{turn}: " + " ".join(turn_output))
+        # GUIの描画
+        print(f"{INFO}Starting GUI Visualizer...")
+        gui = GUIVisualizer(self.graph, self.drones)
+        gui.start()

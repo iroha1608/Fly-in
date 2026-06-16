@@ -24,6 +24,15 @@ class ColorManager:
         "black": "#444444",
         "white": "#FFFFFF"
     }
+    RAINBOW = [
+        COLORS["red"],
+        COLORS["orange"],
+        COLORS["yellow"],
+        COLORS["green"],
+        COLORS["cyan"],
+        COLORS["blue"],
+        COLORS["purple"]
+    ]
     RESET = "\33[0m"
     DEFAULT = "#FFFFFF"
 
@@ -44,7 +53,6 @@ class ColorManager:
                 return color_input.upper()
 
         return cls.COLORS.get(color_input.lower(), cls.DEFAULT)
-
 
     @classmethod
     def hex_to_ansi(cls, color_name: str) -> str:
@@ -76,3 +84,11 @@ class ColorManager:
     def get_ansi_reset(cls) -> str:
         """TerminalのANSIをRESETする文字列を返す。"""
         return cls.RESET
+
+    @classmethod
+    def get_ansi_rainbow(cls, text) -> str:
+        """textをANSIでRainbowにし文字列を返す。"""
+        result: str = ""
+        for i, char in enumerate(text):
+            result += cls.hex_to_ansi(cls.RAINBOW[i % len(cls.RAINBOW)]) + char
+        return result
