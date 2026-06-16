@@ -114,7 +114,7 @@ class Parser:
 
     def _validate_connectivity(self) -> None:
         if not self.graph.start_zone or not self.graph.end_zone:
-            raise ParseError(
+            raise ParserError(
                 "Map validation failed: Missing start_hub or end_hub")
 
         queue = deque([self.graph.start_zone])
@@ -131,7 +131,7 @@ class Parser:
                         and not target.is_pruned):
                     visited.add(target.name)
                     queue.append(target)
-        raise ParseError(
+        raise ParserError(
             "Map validation failed: "
             "No valid path exists from start_hub to end_hub."
         )
@@ -151,6 +151,9 @@ class Parser:
 
                     # "nb_drones"
                     if line.startswith("nb_drones:"):
+                        if self.graph.nb_drones > 0:
+                            raise ParserError(f"Line {i}: Duplicate \"nb_drones\".")
+
                         match = pattern_drones.match(line)
                         if not match:
                             raise ParserError(f"Line {i}: Invalid \"nb_drones\" format or negative value.")
