@@ -5,6 +5,7 @@ from typing import Any
 
 from Graph import Graph
 from Drone import Drone
+from ColorManager import ColorManager
 
 
 class GUIVisualizer:
@@ -18,8 +19,8 @@ class GUIVisualizer:
         self.max_turns = (
             max(len(d.planned_path) for d in drones) if drones else 0)
 
-        # アニメーション設定
-        # 1ターンの合計時間: 500ms
+        # --------------- アニメーション設定 ---------------
+        # 1ターンの合計時間: 800ms
         self.turn_duration_ms = 800
         # フレームレート
         self.fps = 60
@@ -32,13 +33,24 @@ class GUIVisualizer:
         )
         self.turn_pause_ms = 400
 
-        # メインウィンドウの作成
+        # 再生状態のフラグ
+        self.is_playing = True
+
+        # --------------- メインウィンドウの設定 ---------------
         self.root = tk.Tk()
         self.root.title("Fly-in Simulatier")
-        self.root.geometry("2700x1800")
         self.root.configure(bg="#2D2D2D")
+        self.root.bind("<Escape>", lambda event: self.root.destroy())
 
-        self.cw, self.ch = 2500, 1600
+        # 自動でウィンドウサイズを調整
+        screen_width = self.root.winfo_screenwidth()
+        screen_height = self.root.winfo_screenheight()
+        win_width = int(screen_width * 0.85)
+        win_height = int(screen_height * 0.85)
+        self.root.geometry(f"{win_width}x{win_height}")
+
+        # ウィンドウサイズに合わせてCanvasサイズも調整
+        self.cw, self.ch = win_width, win_height - 150
         self.canvas = tk.Canvas(
             self.root,
             width=self.cw,
@@ -46,8 +58,9 @@ class GUIVisualizer:
             bg="#1E1E1E",
             highlightthickness=0
         )
-        self.canvas.pack(pady=20)
+        self.canvas.pack(pady=10)
 
+        # ターン表示
         self.turn_label = tk.Label(
             self.root,
             text="Turn: 0",
@@ -57,29 +70,98 @@ class GUIVisualizer:
         )
         self.turn_label.pack()
 
-        self.drone_shapes = {}
+        # --------------- コントロールパネルの追加 ---------------
+        self.control_frame = tk.Frame(self.root, bg="#2D2D2D")
+        self.control_frame.pack(side=tk.BOTTOM, pady=10)
 
-        self.tk_colors = {
-            "red": "#FF3C3C",
-            "green": "#32DC64",
-            "blue": "#2878FF",
-            "yellow": "#FFD200",
-            "magenta": "#EB3CEB",
-            "cyan": "#28D2E6",
-            "gray": "#828282",
-            "orange": "#FF8C00",
-            "purple": "#8C28E6",
-            "brown": "#964B00",
-            "lime": "#78FF00",
-            "maroon": "#800000",
-            "darkred": "#8B0000",
-            "crimson": "#DC143C",
-            "pink": "#FF69B4",
-            "black": "#444444",
-            "gold": "#FFD700",
-            "white": "#FFFFFF"
-        }
+        # 戻る
+        self.btn_prev = tk.Button(
+            self.control_frame,
+            text="Prev",
+            command=self.prev_turn,
+            font=("Helvetica", 14),
+            bg="#444",
+            fg="white",
+            width=4
+        )
+        self.btn_prev.pack(side=tk.LEFT, padx=10)
+
+        # 再生、一時停止
+        self.btn_play_pause = tk.Button(
+            self.control_frame,
+            text="Pause",
+            command=self.toggle_play,
+            font=("Helvetica", 14),
+            bg="#444",
+            fg="white",
+            width=4
+        )
+        self.btn_play_pause.pack(side=tk.LEFT, padx=10)
+
+        # 進む
+        self.btn_next = tk.Button(
+            self.control_frame,
+            text="Next",
+            command=self.next_turn,
+            font=("Helvetica", 14),
+            bg="#444",
+            fg="white",
+            width=4
+        )
+        self.btn_next.pack(side=tk.LEFT, padx=10)
+
+        # 残りの処理
+        self.drone_shapes = {}
+        self.colormanager = ColorManager()
         self._calculate_scale_and_offset()
+
+    def toggle_play(self) -> None:
+        """再生、一時停止切り替え"""
+        self.is_playing = not self.is_playing
+        self.btn_play_pause.config(text="Pause" if self.is_playing else "Start")
+
+        # 再開時に次のフレームから続行
+        if self.is_playing:
+            self.animate_turn()
+
+    def prev_turn(self) -> None:
+        """戻るボタン。一時停止し1つ前に戻る"""
+        self.is_playing = False
+        self.btn_play_pause.config(text="Start")
+
+        if self.current_turn > 0:
+            self.current_turn -= 1
+            self.current_frame = 0
+            self.update_drones_instant()
+
+    def next_turn(self) -> None:
+        """進むボタン。一時停止し1つ先に進む"""
+        self.is_playing = False
+        self.btn_play_pause.config(text="Start")
+
+        if self.current_turn < self.max_turns:
+            self.current_turn += 1
+            self.current_frame = 0
+            self.update_drones_instant()
+
+    def update_drones_instant(self) -> None:
+        """
+            指定されたターンの位置にドローンを即移動させる
+        """
+        self.turn_label.config(text=f"Turn: {self.current_turn}")
+        r = 5
+        for drone in self.drones:
+            location = drone.get_location(self.current_turn)
+            px, py = self._get_location_coords(location)
+
+            shape_id = self.drone_shapes[drone.id]
+            self.canvas.coords(
+                shape_id,
+                px - r,
+                py - r,
+                px + r,
+                py + r
+            )
 
     def _calculate_scale_and_offset(self) -> None:
         """
@@ -119,15 +201,6 @@ class GUIVisualizer:
         px = self.offset_x + (logical_x * self.scale)
         py = self.offset_y + (logical_y * self.scale)
         return px, py
-
-    def _get_tk_color(self, color_name: str) -> str:
-        """
-            文字列のカラーからtkinter用のカラーを取得する。
-        """
-        if not color_name:
-            return "#444444"
-
-        return self.tk_colors.get(color_name.lower(), "#444444")
 
     def _get_location_coords(self, location_name: str) -> tuple[float, float]:
         if "-" in location_name:
@@ -182,14 +255,15 @@ class GUIVisualizer:
                     fill="#222222"
                 )
             else:
-                color =self._get_tk_color(zone.color)
+                color =self.colormanager.get_hex(zone.color)
                 self.canvas.create_oval(
                     px - r,
                     py - r,
                     px + r,
                     py + r,
                     outline="#FFFFFF",
-                    fill=color, width=2
+                    fill=color,
+                    width=2
                 )
 
                 text_content = zone.name
@@ -238,6 +312,10 @@ class GUIVisualizer:
             1ターンごとの状態を画面に反映、次のターンをスケジュールする。
             60FPSで500msのターン
         """
+        # 一時停止判定
+        if not self.is_playing:
+            return
+
         # アニメーション終了判定
         if self.current_frame >= self.total_frames_per_turn:
             self.current_frame = 0
@@ -245,7 +323,10 @@ class GUIVisualizer:
 
             if self.current_turn > self.max_turns:
                 self.turn_label.config(text=f"Turn: {self.max_turns} (Finished)")
+                self.is_playing = False
+                self.btn_play_pause.config(text="Start")
                 return
+
             self.turn_label.config(text=f"Turn: {self.current_turn}")
             # 指定した時間分待ってから再開
             self.root.after(self.turn_pause_ms, self.animate_turn)
