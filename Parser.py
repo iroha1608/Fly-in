@@ -4,9 +4,9 @@
 """
 import re
 import math
-import sys
 import argparse
 from pathlib import Path
+from collections import deque
 from pydantic import BaseModel, Field, ValidationError
 
 from Zone import Zone
@@ -23,11 +23,18 @@ class CLIConfig(BaseModel):
     )
 
 
+class ParserError(ValueError):
+    """パース中に発生したエラーを行番号とともに保持するカスタムエラー"""
+    pass
+
+
 class Parser:
     """
     """
     def __init__(self) -> None:
         self.graph = Graph()
+        self.seen_connections: set = set()
+        self.VALID_ZONE_TYPE = {"normal", "blocked", "restricted", "priority"}
 
     @staticmethod
     def parse_arguments() -> CLIConfig:
@@ -39,9 +46,7 @@ class Parser:
                 ValueError:
                 ValidationError:
             """
-        parser = argparse.ArgumentParser(
-            description=""
-        )
+        parser = argparse.ArgumentParser(description="")
 
         parser.add_argument(
             "-m", "--map",
@@ -107,33 +112,78 @@ class Parser:
             if not removed_any:
                 break
 
+    def _validate_connectivity(self) -> None:
+        if not self.graph.start_zone or not self.graph.end_zone:
+            raise ParseError(
+                "Map validation failed: Missing start_hub or end_hub")
+
+        queue = deque([self.graph.start_zone])
+        visited = {self.graph.start_zone.name}
+
+        while queue:
+            current = queue.popleft()
+            if current == self.graph.end_zone:
+                return
+            for connection in current.connections:
+                target = connection.target_zone
+                if (target.name not in visited
+                        and target.zone_type != "blocked"
+                        and not target.is_pruned):
+                    visited.add(target.name)
+                    queue.append(target)
+        raise ParseError(
+            "Map validation failed: "
+            "No valid path exists from start_hub to end_hub."
+        )
+
     def parse_file(self, filepath: str) -> Graph:
+        pattern_drones = re.compile(r"^nb_drones:\s*(\d+)$")
+        pattern_zone = re.compile(r"^(start_hub|end_hub|hub):\s+([^\s\-]+)\s+(-?\d+)\s+(-?\d+)(?:\s+\[(.*?)\])?$")
+        pattern_connection = re.compile(r"^connection:\s+([^\s\-]+)-([^\s\-]+)(?:\s+\[(.*?)\])?$")
+
         try:
             with open(filepath, "r", encoding="utf-8") as f:
-                for line in f:
+                for i, line in enumerate(f, 1):
                     line = line.split("#")[0].strip()
+
                     if not line:
                         continue
 
-                    if line.startswith("nb_drones"):
-                        self.graph.nb_drones = int(line.split(":")[1].strip())
+                    # "nb_drones"
+                    if line.startswith("nb_drones:"):
+                        match = pattern_drones.match(line)
+                        if not match:
+                            raise ParserError(f"Line {i}: Invalid \"nb_drones\" format or negative value.")
+                        drones = int(match.group(1))
+                        if drones <= 0:
+                            raise ParserError(f"Line {i}: \"nb_drones\" must be greater than 0.")
+                        self.graph.nb_drones = drones
                         continue
 
+                    # "Zone"
                     if line.startswith(("start_hub:", "end_hub:", "hub:")):
-                        parts = line.split(":", 1)[1].strip().split("[", 1)
-                        base_info = parts[0].split()
-                        name = base_info[0]
-                        x, y = int(base_info[1]), int(base_info[2])
+                        match = pattern_zone.match(line)
+                        if not match:
+                            raise ParserError(f"Line {i}: Invalid zone definition format.")
 
-                        meta = self._parse_metadata(f"[{parts[1]}]" if len(parts) > 1 else "")
+                        z_prefix, name, x_str, y_str, meta_str = match.groups()
+                        x, y = int(x_str), int(y_str)
+                        meta = self._parse_metadata(f"[{meta_str}]" if meta_str else "")
 
-                        is_start = line.startswith("start_hub:")
-                        is_end = line.startswith("end_hub:")
-                        max_drones = (
-                            math.inf
-                            if (is_start or is_end)
-                            else float(meta.get("max_drones", 1.0))
-                        )
+                        # zone_type
+                        z_type = meta.get("zone", "normal")
+                        if z_type not in self.VALID_ZONE_TYPE:
+                            raise ParserError(f"Line {i}: Invalid zone type \"{z_type}\". Allowed types are {self.VALID_ZONE_TYPE}")
+
+                        # capacity
+                        is_start_or_end = z_prefix in ("start_hub", "end_hub")
+                        max_drones = math.inf if is_start_or_end else float(meta.get("max_drones", 1.0))
+                        if not is_start_or_end and max_drones <= 0:
+                            raise ParserError(f"Line {i}: \"max_drones\" must be a positive number.")
+
+                        # 重複名
+                        if name in self.graph.zones:
+                            raise ParserError(f"Line {i}: Duplicate zone name \"{name}\".")
 
                         zone = Zone(
                             name=name,
@@ -143,26 +193,53 @@ class Parser:
                             color=meta.get("color"),
                             max_drones=max_drones
                         )
-
                         self.graph.add_zone(zone)
-                        if is_start:
+
+                        if z_prefix == "start_hub":
+                            if self.graph.start_zone:
+                                raise ParserError(f"Line {i}: Multiple start_hub defined.")
                             self.graph.start_zone = zone
-                        elif line.startswith("end_hub"):
+
+                        elif z_prefix == "end_hub":
+                            if self.graph.end_zone:
+                                raise ParserError(f"Line {i}: Multiple end_hub defined.")
                             self.graph.end_zone = zone
+                        continue
 
+                    # Connection
                     elif line.startswith("connection:"):
-                        parts = line.split(":", 1)[1].strip().split("[", 1)
-                        name1, name2 = parts[0].strip().split("-")
+                        match = pattern_connection.match(line)
+                        if not match:
+                            raise ParserError(f"Line {i}: Invalid connection format. (Zone names cannot contain dashes)")
 
-                        meta = self._parse_metadata(f"[{parts[1]}]" if len(parts) > 1 else "")
+                        name1, name2, meta_str = match.groups()
+
+                        if name1 not in self.graph.zones or name2 not in self.graph.zones:
+                            raise ParserError(f"Line {i}: Connection refers to undefined zone(s) \"{name1}\" or \"{name2}\"")
+
+                        # 重複接続
+                        connection_key = frozenset({name1, name2})
+                        if connection_key in self.seen_connections:
+                            raise ParserError(f"Line {i}: Duplicate connection between \"{name1}\" and \"{name2}\"")
+                        self.seen_connections.add(connection_key)
+                        meta = self._parse_metadata(f"[{meta_str}]" if meta_str else "")
+
+                        # max_link_capacity
                         capacity = int(meta.get("max_link_capacity", 1))
-
+                        if capacity <= 0:
+                            raise ParserError(f"Line {i}: \"max_link_capacity\" must be a positive integer.")
                         self.graph.add_connection(name1, name2, capacity)
+                        continue
 
-                if not self.graph.start_zone or not self.graph.end_zone:
-                    raise ValueError(
-                        "Start or End zone is missing in the map.")
+                    raise ParserError(f"Line {i}: Unknown directive or syntax error.")
 
+            if not self.graph.start_zone or not self.graph.end_zone:
+                raise ParserError(
+                    "Map Validation failed: "
+                    "Start or End zone is missing in the map."
+                )
+
+            self._validate_connectivity()
             return self.graph
 
         except FileNotFoundError as e:
