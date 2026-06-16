@@ -23,50 +23,47 @@ class CLIConfig(BaseModel):
     )
 
 
-def parse_arguments() -> CLIConfig:
-    """
-        コマンドライン引数をパースし、CLIConfigで検証し返す。
-        Returns:
-            CLIConfig: パースし検証済みのコマンドライン引数の情報
-        Raises:
-            ValueError:
-            ValidationError:
-        """
-    parser = argparse.ArgumentParser(
-        description=""
-    )
-
-    parser.add_argument(
-        "-m", "--map",
-        type=str,
-        help=""
-    )
-    try:
-        # 解析、不正な引数は自動でSystemExitが呼ばれhelpが出る
-        args = parser.parse_args()
-        kwargs = {k: v for k, v in vars(args).items() if v is not None}
-
-        # pydanticによる型検証、安全なデータモデルの生成
-        return CLIConfig(**kwargs)
-
-    except ValidationError as e:
-        print("[\33[31mCLI Error\33[0m]: Argument validation failed.\n"
-              f"{e}", file=sys.stderr)
-        sys.exit(1)
-
-    except Exception as e:
-        print(f"[\33[31mCLI Error\33[0m]: Unexpected error during parsing: \n"
-              f"{e}", file=sys.stderr)
-        sys.exit(1)
-
-
 class Parser:
     """
     """
     def __init__(self) -> None:
         self.graph = Graph()
 
-    def parse_metadata(self, metadata_str: str) -> dict[str, str]:
+    @staticmethod
+    def parse_arguments() -> CLIConfig:
+        """
+            コマンドライン引数をパースし、CLIConfigで検証し返す。
+            Returns:
+                CLIConfig: パースし検証済みのコマンドライン引数の情報
+            Raises:
+                ValueError:
+                ValidationError:
+            """
+        parser = argparse.ArgumentParser(
+            description=""
+        )
+
+        parser.add_argument(
+            "-m", "--map",
+            type=str,
+            help=""
+        )
+        try:
+            # 解析、不正な引数は自動でSystemExitが呼ばれhelpが出る
+            args = parser.parse_args()
+            kwargs = {k: v for k, v in vars(args).items() if v is not None}
+
+            # pydanticによる型検証、安全なデータモデルの生成
+            return CLIConfig(**kwargs)
+
+        except ValidationError as e:
+            raise ValueError("Argument validation failed.") from e
+
+        except Exception as e:
+            raise ValueError(f"Unexpected error during parsing. {e}")
+
+    @staticmethod
+    def _parse_metadata(metadata_str: str) -> dict[str, str]:
         metadata = {}
         if not metadata_str:
             return metadata
@@ -78,7 +75,37 @@ class Parser:
                 if "=" in pair:
                     key, value = pair.split('=', 1)
                     metadata[key] = value
+
         return metadata
+
+    @staticmethod
+    def prune_dead_end(graph: Graph) -> None:
+        """
+            行き止まりのノードを探索時に含めないように、
+            is_pruned = Trueにする。
+        """
+        while True:
+            removed_any = False
+            for zone in graph.zones.values():
+                # 枝刈り済み、スタート、ゴールはスキップ。
+                if zone.is_pruned or zone == graph.start_zone or zone == graph.end_zone:
+                    continue
+
+                # まだ枝刈りされていない接続先を調べる。
+                active_connections = [
+                    con
+                    for con in zone.connections
+                    if not con.target_zone.is_pruned
+                ]
+
+                # 接続先が来る道しか無い(行き止まり)道は枝切り。
+                if len(active_connections) <= 1:
+                    zone.is_pruned = True
+                    removed_any = True
+
+            # 枝切りが終わったらループ終了。
+            if not removed_any:
+                break
 
     def parse_file(self, filepath: str) -> Graph:
         try:
@@ -98,7 +125,7 @@ class Parser:
                         name = base_info[0]
                         x, y = int(base_info[1]), int(base_info[2])
 
-                        meta = self.parse_metadata(f"[{parts[1]}]" if len(parts) > 1 else "")
+                        meta = self._parse_metadata(f"[{parts[1]}]" if len(parts) > 1 else "")
 
                         is_start = line.startswith("start_hub:")
                         is_end = line.startswith("end_hub:")
@@ -127,7 +154,7 @@ class Parser:
                         parts = line.split(":", 1)[1].strip().split("[", 1)
                         name1, name2 = parts[0].strip().split("-")
 
-                        meta = self.parse_metadata(f"[{parts[1]}]" if len(parts) > 1 else "")
+                        meta = self._parse_metadata(f"[{parts[1]}]" if len(parts) > 1 else "")
                         capacity = int(meta.get("max_link_capacity", 1))
 
                         self.graph.add_connection(name1, name2, capacity)
@@ -158,31 +185,3 @@ class Parser:
             raise ValueError(
                 f"OS error occurred while reading {filepath}: {e}") from e
 
-    @staticmethod
-    def prune_dead_end(graph: Graph) -> None:
-        """
-            行き止まりのノードを探索時に含めないように、
-            is_pruned = Trueにする。
-        """
-        while True:
-            removed_any = False
-            for zone in graph.zones.values():
-                # 枝刈り済み、スタート、ゴールはスキップ。
-                if zone.is_pruned or zone == graph.start_zone or zone == graph.end_zone:
-                    continue
-
-                # まだ枝刈りされていない接続先を調べる。
-                active_connections = [
-                    con
-                    for con in zone.connection
-                    if not con.target_zone.is_pruned
-                ]
-
-                # 接続先が来る道しか無い(行き止まり)道は枝切り。
-                if len(active_connections) <= 1:
-                    zone.is_pruned = True
-                    removed_any = True
-
-            # 枝切りが終わったらループ終了。
-            if not removed_any:
-                break
