@@ -35,7 +35,7 @@ clean:
 
 fclean: clean
 	$(RM) .venv
-	$(RM) maps/
+# $(RM) maps/
 
 lint:
 	- $(UV) run flake8 .
