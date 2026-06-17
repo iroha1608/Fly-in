@@ -5,6 +5,7 @@ import math
 import argparse
 from pathlib import Path
 from collections import deque
+from typing import Any
 from pydantic import BaseModel, Field, ValidationError
 
 from Zone import Zone
@@ -29,7 +30,7 @@ class ParserError(ValueError):
 class Parser:
     """"""
     def __init__(self) -> None:
-        self.seen_connections: set = set()
+        self.seen_connections: set[str | Any] = set()
         self.VALID_ZONE_KEYS = {"zone",  "color", "max_drones"}
         self.VALID_ZONE_TYPE = {"normal", "blocked", "restricted", "priority"}
         self.VALID_CONNECTIONS_KEYS = {"max_link_capacity"}
@@ -207,7 +208,8 @@ class Parser:
                         z_prefix, name, x_str, y_str, meta_str, garbage = (
                             match.groups())
                         if garbage and garbage.strip():
-                            print(f"{WARNING}Line {i}: "
+                            print(
+                                f"{WARNING}Line {i}: "
                                 "Ignored trailing characters "
                                 f"\"{garbage.strip()}\" "
                                 "after metadata.", file=sys.stderr)
@@ -312,7 +314,8 @@ class Parser:
                         # Connectionの情報を取得
                         name1, name2, meta_str, garbage = match.groups()
                         if garbage and garbage.strip():
-                            print(f"{WARNING}Line {i}: "
+                            print(
+                                f"{WARNING}Line {i}: "
                                 "Ignored trailing characters "
                                 f"\"{garbage.strip()}\" "
                                 "after metadata.", file=sys.stderr)

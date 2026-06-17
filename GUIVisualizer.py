@@ -110,11 +110,11 @@ class GUIVisualizer:
         self.btn_next.pack(side=tk.LEFT, padx=10)
 
         # 残りの処理
-        self.drone_shapes: dict = {}
+        self.drone_shapes: dict[str, int] = {}
         self._calculate_scale_and_offset()
 
         # color=rainbowへの対応
-        self.rainbow_zone_ids: list = []
+        self.rainbow_zone_ids: list[int] = []
         self.rainbow_hue = 0.0
 
     def _prev_turn(self) -> None:
