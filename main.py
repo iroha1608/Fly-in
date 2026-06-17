@@ -11,14 +11,12 @@ TIME = 0.2
 
 
 def main() -> None:
-    print("-------------------- Fly-in System Started --------------------")
-    time.sleep(TIME)
+    print("-------------------- Fly-in System Started ---------------------")
 
+    # ------------------------ Map fileのパース処理 -------------------------
     parser = Parser()
     print(f"{INFO}Parser has been loaded!")
     time.sleep(TIME)
-
-    # -------------------- Map fileのパース処理 --------------------
     try:
         config = parser.parse_arguments()
         graph = parser.parse_file(config.map)
@@ -33,12 +31,12 @@ def main() -> None:
           f" -> Goal: '{graph.end_zone.name}'")
     time.sleep(TIME)
 
-    # -------------------- Simulation Engineの起動 --------------------
+    # ----------------------- Simulation Engineの起動 -----------------------
     engine = SimulationEngine(graph)
     print(f"{INFO}Simulation engine has been loaded!")
     time.sleep(TIME)
 
-    # ------------------------- 最短経路探索処理 -------------------------
+    # -------------------------- 最短経路探索処理 ---------------------------
     try:
         engine.find_path()
     except ValueError as e:
@@ -47,8 +45,8 @@ def main() -> None:
     print(f"{INFO}Path Found!")
     time.sleep(TIME)
 
-    # ------------------------- Visualizerの起動 -------------------------
-    print("-------------------- Simulation Output --------------------")
+    # --------------------------- Visualizerの起動 --------------------------
+    print("---------------------- Simulation Output -----------------------")
     engine.run_simulation()
     print("-------------------- Fly-in System Finished --------------------")
 
