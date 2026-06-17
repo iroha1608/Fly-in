@@ -27,7 +27,9 @@ class Parser:
     """"""
     def __init__(self) -> None:
         self.seen_connections: set = set()
+        self.VALID_ZONE_KEYS = {"zone",  "color", "max_drones"}
         self.VALID_ZONE_TYPE = {"normal", "blocked", "restricted", "priority"}
+        self.VALID_CONNECTIONS_KEYS = {"max_link_capacity"}
 
     @staticmethod
     def parse_arguments() -> CLIConfig:
@@ -57,7 +59,7 @@ class Parser:
     @staticmethod
     def _parse_metadata(metadata_str: str) -> dict[str, str]:
         """"""
-        metadata: dict = {}
+        metadata: dict[str, str] = {}
         if not metadata_str:
             return metadata
 
@@ -68,6 +70,10 @@ class Parser:
                 if "=" in pair:
                     key, value = pair.split('=', 1)
                     metadata[key] = value
+                else:
+                    raise ValueError(
+                        f"Invalid metadata format \"{pair}\". "
+                        "Expected key=value.")
 
         return metadata
 
@@ -131,7 +137,7 @@ class Parser:
     def parse_file(self, filepath: Path) -> Graph:
         """
         """
-        pattern_drones = re.compile(r"^nb_drones:\s*(\d+)$")
+        pattern_drones = re.compile(r"^nb_drones:\s*(-?\d+)$")
         pattern_zone = re.compile(
             r"^(start_hub|end_hub|hub):"
             r"\s+([^\s\-]+)\s+(-?\d+)\s+(-?\d+)(?:\s+\[(.*?)\])?$")
@@ -203,8 +209,20 @@ class Parser:
                                 f"Line {i}: Zone \"{name}\" "
                                 f"{x}, {y} must be a positive integer.")
 
-                        meta = self._parse_metadata(
-                                f"[{meta_str}]" if meta_str else "")
+                        # メタデータ内にゴミ文字があったら弾く
+                        try:
+                            meta = self._parse_metadata(
+                                    f"[{meta_str}]" if meta_str else "")
+                        except ValueError as e:
+                            raise ParserError(f"Line {i}: {e}")
+
+                        # hubのメタデータ以外弾く
+                        for key in meta.keys():
+                            if key not in self.VALID_ZONE_KEYS:
+                                raise ParserError(
+                                    f"Unkown metadata key \"{key}\" "
+                                    "for a zone. Allowed keys are "
+                                    f"{self.VALID_ZONE_KEYS}")
 
                         # Zoneの座標が同じものを弾く
                         coord_key = (x, y)
@@ -215,13 +233,13 @@ class Parser:
                                 f"{x}, {y} with another zone.")
                         seen_coordinates.add(coord_key)
 
-                        # メタデータからzone_typeの処理
+                        # zoneの処理
                         z_type = meta.get("zone", "normal")
                         # 許可されたtype以外を弾く
                         if z_type not in self.VALID_ZONE_TYPE:
                             raise ParserError(
                                 f"Line {i}: Invalid zone type \"{z_type}\". "
-                                "Allowed types are {self.VALID_ZONE_TYPE}")
+                                f"Allowed types are {self.VALID_ZONE_TYPE}")
 
                         # start, endのcapacityはinf, その他はdefault=1.0
                         is_start_or_end = z_prefix in ("start_hub", "end_hub")
@@ -284,8 +302,20 @@ class Parser:
 
                         # Connectionの情報を取得
                         name1, name2, meta_str = match.groups()
-                        meta = self._parse_metadata(
-                                f"[{meta_str}]" if meta_str else "")
+                        # メタデータ内にゴミ文字があったら弾く
+                        try:
+                            meta = self._parse_metadata(
+                                    f"[{meta_str}]" if meta_str else "")
+                        except ValueError as e:
+                            raise ParserError(f"Line {i}: {e}")
+
+                        # connectionのメタデータ以外弾く
+                        for key in meta.keys():
+                            if key not in self.VALID_CONNECTIONS_KEYS:
+                                raise ParserError(
+                                    f"Unkown metadata key \"{key}\" "
+                                    "for a zone. Allowed keys are "
+                                    f"{self.VALID_CONNECTIONS_KEYS}")
 
                         # Connection上のZoneがまだない時弾く
                         if (name1 not in zones
@@ -293,14 +323,15 @@ class Parser:
                             raise ParserError(
                                 f"Line {i}: "
                                 "Connection refers to undefined "
-                                "zone(s) \"{name1}\" or \"{name2}\"")
+                                f"zone(s) \"{name1}\" or \"{name2}\"")
 
                         # 自分自身へのConnectionを弾く
                         if name1 == name2:
                             raise ParserError(
                                 f"Line {i}: "
-                                "Duplicate connection between "
-                                "\"{name1}\" and \"{name2}\"")
+                                "Self-loop connections "
+                                f"(like \"{name1}\" and \"{name2}\""
+                                " are not allowed)")
 
                         # Zone同時の重複接続を弾く
                         connection_key = frozenset({name1, name2})
@@ -308,7 +339,7 @@ class Parser:
                             raise ParserError(
                                 f"Line {i}: "
                                 "Duplicate connection between "
-                                "\"{name1}\" and \"{name2}\"")
+                                f"\"{name1}\" and \"{name2}\"")
                         self.seen_connections.add(connection_key)
 
                         # max_link_capacityが1以上の整数ではなければ弾く
@@ -348,7 +379,8 @@ class Parser:
                     raise ParserError(
                         f"Line {i}: "
                         "Connection refers to undefined zone(z) "
-                        f"\"{name1}\" or \"{name2}\"")
+                        f"\"{name1}\" or \"{name2}\""
+                        )
                 graph.add_connection(name1, name2, capacity)
 
             # 行き止まりを枝刈り
