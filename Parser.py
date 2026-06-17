@@ -165,9 +165,12 @@ class Parser:
                                 f"Line {i}: "
                                 "The first valid line must be \"nb_drones\".")
 
-                        # dronesの数が0以下なら弾く
-                        drones = int(match.group(1))
-                        if drones <= 0:
+                        # dronesの数が1以上の整数でなければ弾く
+                        try:
+                            drones = int(match.group(1))
+                            if drones <= 0:
+                                raise ValueError
+                        except ValueError:
                             raise ParserError(
                                 f"Line {i}: "
                                 "\"nb_drones\" must be greater than 0.")
@@ -193,7 +196,13 @@ class Parser:
 
                         # Zoneの種別、名前、座標、メタデータを取得
                         z_prefix, name, x_str, y_str, meta_str = match.groups()
-                        x, y = int(x_str), int(y_str)
+                        try:
+                            x, y = int(x_str), int(y_str)
+                        except ValueError:
+                            raise ParserError(
+                                f"Line {i}: Zone \"{name}\" "
+                                f"{x}, {y} must be a positive integer.")
+
                         meta = self._parse_metadata(
                                 f"[{meta_str}]" if meta_str else "")
 
@@ -216,13 +225,15 @@ class Parser:
 
                         # start, endのcapacityはinf, その他はdefault=1.0
                         is_start_or_end = z_prefix in ("start_hub", "end_hub")
-                        max_drones = (
-                            math.inf
-                            if is_start_or_end
-                            else float(meta.get("max_drones", 1.0)))
-
-                        # start, end以外のcapacityの数が0以下なら弾く
-                        if not is_start_or_end and max_drones <= 0.0:
+                        try:
+                            max_drones = (
+                                math.inf
+                                if is_start_or_end
+                                else float(meta.get("max_drones", 1.0)))
+                            # start, end以外のcapacityの数が0以下なら弾く
+                            if not is_start_or_end and max_drones <= 0.0:
+                                raise ValueError
+                        except ValueError:
                             raise ParserError(
                                 f"Line {i}: \"max_drones\" "
                                 "must be a positive number.")
@@ -284,6 +295,13 @@ class Parser:
                                 "Connection refers to undefined "
                                 "zone(s) \"{name1}\" or \"{name2}\"")
 
+                        # 自分自身へのConnectionを弾く
+                        if name1 == name2:
+                            raise ParserError(
+                                f"Line {i}: "
+                                "Duplicate connection between "
+                                "\"{name1}\" and \"{name2}\"")
+
                         # Zone同時の重複接続を弾く
                         connection_key = frozenset({name1, name2})
                         if connection_key in self.seen_connections:
@@ -293,9 +311,12 @@ class Parser:
                                 "\"{name1}\" and \"{name2}\"")
                         self.seen_connections.add(connection_key)
 
-                        # max_link_capacityの数が0以下なら弾く
-                        capacity = int(meta.get("max_link_capacity", 1))
-                        if capacity <= 0:
+                        # max_link_capacityが1以上の整数ではなければ弾く
+                        try:
+                            capacity = int(meta.get("max_link_capacity", 1))
+                            if capacity <= 0:
+                                raise ValueError
+                        except ValueError:
                             raise ParserError(
                                 f"Line {i}: "
                                 "\"max_link_capacity\" "
