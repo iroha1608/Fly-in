@@ -110,11 +110,11 @@ class GUIVisualizer:
         self.btn_next.pack(side=tk.LEFT, padx=10)
 
         # 残りの処理
-        self.drone_shapes = {}
+        self.drone_shapes: dict = {}
         self._calculate_scale_and_offset()
 
         # color=rainbowへの対応
-        self.rainbow_zone_ids = []
+        self.rainbow_zone_ids: list = []
         self.rainbow_hue = 0.0
 
     def toggle_play(self) -> None:
@@ -171,7 +171,7 @@ class GUIVisualizer:
             Zoneのすべての(x, y)座標を見て、Canvasの80%に収める。
         """
         if not self.graph.zones:
-            self.scale = 100
+            self.scale = 100.0
             self.offset_x, self.offset_y = self.cw / 2, self.ch / 2
             return
 
@@ -392,7 +392,7 @@ class GUIVisualizer:
         rgb = colorsys.hls_to_rgb(self.rainbow_hue, 0.5, 1.0)
         hex_color = (
             f"#{int(rgb[0]*255):02x}{int(rgb[1]*255):02x}"
-            "{int(rgb[2]*255):02x}")
+            f"{int(rgb[2]*255):02x}")
 
         for oval_id in self.rainbow_zone_ids:
             self.canvas.itemconfig(oval_id, fill=hex_color)
