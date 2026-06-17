@@ -15,7 +15,7 @@ class TerminalVisualizer:
             max(len(d.planned_path) for d in drones) if drones else 0
         )
 
-    def _colorize(self, zone_name: str) -> str:
+    def _colorize(self, zone_name: str | None) -> str:
         """色名、RGBからANSIに変換"""
         if zone_name in self.graph.zones:
             # Zoneのcolorを取得
@@ -25,7 +25,7 @@ class TerminalVisualizer:
             if color_name == "rainbow":
                 result_color = ColorManager.get_ansi_rainbow(zone_name)
                 if result_color and reset_color:
-                    return  f"{result_color}{reset_color}"
+                    return f"{result_color}{reset_color}"
             else:
                 ansi_color = ColorManager.get_ansi(color_name)
                 if ansi_color and reset_color:

@@ -93,7 +93,9 @@ class Parser:
             removed_any = False
             for zone in graph.zones.values():
                 # 枝刈り済み、スタート、ゴールはスキップ。
-                if zone.is_pruned or zone == graph.start_zone or zone == graph.end_zone:
+                if (zone.is_pruned
+                        or zone == graph.start_zone
+                        or zone == graph.end_zone):
                     continue
 
                 # まだ枝刈りされていない接続先を調べる。
@@ -138,8 +140,10 @@ class Parser:
 
     def parse_file(self, filepath: str) -> Graph:
         pattern_drones = re.compile(r"^nb_drones:\s*(\d+)$")
-        pattern_zone = re.compile(r"^(start_hub|end_hub|hub):\s+([^\s\-]+)\s+(-?\d+)\s+(-?\d+)(?:\s+\[(.*?)\])?$")
-        pattern_connection = re.compile(r"^connection:\s+([^\s\-]+)-([^\s\-]+)(?:\s+\[(.*?)\])?$")
+        pattern_zone = re.compile(
+            r"^(start_hub|end_hub|hub):\s+([^\s\-]+)\s+(-?\d+)\s+(-?\d+)(?:\s+\[(.*?)\])?$")
+        pattern_connection = re.compile(
+                r"^connection:\s+([^\s\-]+)-([^\s\-]+)(?:\s+\[(.*?)\])?$")
 
         try:
             with open(filepath, "r", encoding="utf-8") as f:
@@ -152,14 +156,19 @@ class Parser:
                     # "nb_drones"
                     if line.startswith("nb_drones:"):
                         if self.graph.nb_drones > 0:
-                            raise ParserError(f"Line {i}: Duplicate \"nb_drones\".")
+                            raise ParserError(
+                                f"Line {i}: Duplicate \"nb_drones\".")
 
                         match = pattern_drones.match(line)
                         if not match:
-                            raise ParserError(f"Line {i}: Invalid \"nb_drones\" format or negative value.")
+                            raise ParserError(
+                                f"Line {i}: Invalid \"nb_drones\" format "
+                                "or negative value.")
                         drones = int(match.group(1))
                         if drones <= 0:
-                            raise ParserError(f"Line {i}: \"nb_drones\" must be greater than 0.")
+                            raise ParserError(
+                                f"Line {i}: \"nb_drones\" "
+                                "must be greater than 0.")
                         self.graph.nb_drones = drones
                         continue
 
@@ -167,26 +176,36 @@ class Parser:
                     if line.startswith(("start_hub:", "end_hub:", "hub:")):
                         match = pattern_zone.match(line)
                         if not match:
-                            raise ParserError(f"Line {i}: Invalid zone definition format.")
+                            raise ParserError(
+                                f"Line {i}: Invalid zone definition format.")
 
                         z_prefix, name, x_str, y_str, meta_str = match.groups()
                         x, y = int(x_str), int(y_str)
-                        meta = self._parse_metadata(f"[{meta_str}]" if meta_str else "")
+                        meta = self._parse_metadata(
+                                f"[{meta_str}]" if meta_str else "")
 
                         # zone_type
                         z_type = meta.get("zone", "normal")
                         if z_type not in self.VALID_ZONE_TYPE:
-                            raise ParserError(f"Line {i}: Invalid zone type \"{z_type}\". Allowed types are {self.VALID_ZONE_TYPE}")
+                            raise ParserError(
+                                f"Line {i}: Invalid zone type \"{z_type}\". "
+                                "Allowed types are {self.VALID_ZONE_TYPE}")
 
                         # capacity
                         is_start_or_end = z_prefix in ("start_hub", "end_hub")
-                        max_drones = math.inf if is_start_or_end else float(meta.get("max_drones", 1.0))
+                        max_drones = (
+                            math.inf
+                            if is_start_or_end
+                            else float(meta.get("max_drones", 1.0)))
                         if not is_start_or_end and max_drones <= 0:
-                            raise ParserError(f"Line {i}: \"max_drones\" must be a positive number.")
+                            raise ParserError(
+                                f"Line {i}: \"max_drones\" "
+                                "must be a positive number.")
 
                         # 重複名
                         if name in self.graph.zones:
-                            raise ParserError(f"Line {i}: Duplicate zone name \"{name}\".")
+                            raise ParserError(
+                                f"Line {i}: Duplicate zone name \"{name}\".")
 
                         zone = Zone(
                             name=name,
@@ -200,12 +219,14 @@ class Parser:
 
                         if z_prefix == "start_hub":
                             if self.graph.start_zone:
-                                raise ParserError(f"Line {i}: Multiple start_hub defined.")
+                                raise ParserError(
+                                    f"Line {i}: Multiple start_hub defined.")
                             self.graph.start_zone = zone
 
                         elif z_prefix == "end_hub":
                             if self.graph.end_zone:
-                                raise ParserError(f"Line {i}: Multiple end_hub defined.")
+                                raise ParserError(
+                                    f"Line {i}: Multiple end_hub defined.")
                             self.graph.end_zone = zone
                         continue
 
@@ -213,28 +234,39 @@ class Parser:
                     elif line.startswith("connection:"):
                         match = pattern_connection.match(line)
                         if not match:
-                            raise ParserError(f"Line {i}: Invalid connection format. (Zone names cannot contain dashes)")
+                            raise ParserError(
+                                f"Line {i}: Invalid connection format. "
+                                "(Zone names cannot contain dashes)")
 
                         name1, name2, meta_str = match.groups()
 
-                        if name1 not in self.graph.zones or name2 not in self.graph.zones:
-                            raise ParserError(f"Line {i}: Connection refers to undefined zone(s) \"{name1}\" or \"{name2}\"")
+                        if (name1 not in self.graph.zones
+                                or name2 not in self.graph.zones):
+                            raise ParserError(
+                                f"Line {i}: Connection refers to undefined "
+                                "zone(s) \"{name1}\" or \"{name2}\"")
 
                         # 重複接続
                         connection_key = frozenset({name1, name2})
                         if connection_key in self.seen_connections:
-                            raise ParserError(f"Line {i}: Duplicate connection between \"{name1}\" and \"{name2}\"")
+                            raise ParserError(
+                                f"Line {i}: Duplicate connection between "
+                                "\"{name1}\" and \"{name2}\"")
                         self.seen_connections.add(connection_key)
-                        meta = self._parse_metadata(f"[{meta_str}]" if meta_str else "")
+                        meta = self._parse_metadata(
+                                f"[{meta_str}]" if meta_str else "")
 
                         # max_link_capacity
                         capacity = int(meta.get("max_link_capacity", 1))
                         if capacity <= 0:
-                            raise ParserError(f"Line {i}: \"max_link_capacity\" must be a positive integer.")
+                            raise ParserError(
+                                f"Line {i}: \"max_link_capacity\" "
+                                "must be a positive integer.")
                         self.graph.add_connection(name1, name2, capacity)
                         continue
 
-                    raise ParserError(f"Line {i}: Unknown directive or syntax error.")
+                    raise ParserError(
+                        f"Line {i}: Unknown directive or syntax error.")
 
             if not self.graph.start_zone or not self.graph.end_zone:
                 raise ParserError(
@@ -255,7 +287,8 @@ class Parser:
 
         except UnicodeDecodeError as e:
             raise ValueError(
-                f"File encoding error (MUST be UTF-8): {filepath}: {e}") from e
+                f"File encoding error (MUST be UTF-8): {filepath}: {e}"
+            ) from e
 
         except PermissionError as e:
             raise ValueError(
@@ -268,4 +301,3 @@ class Parser:
         except OSError as e:
             raise ValueError(
                 f"OS error occurred while reading {filepath}: {e}") from e
-

@@ -14,6 +14,7 @@ uv:
 # 仮想環境の作成、依存関係のインストール
 install:
 	$(UV) sync
+	wget https://cdn.intra.42.fr/document/document/49241/maps.tar.gz
 
 # 仮想環境のセットアップ
 setup:
@@ -23,7 +24,7 @@ run:
 	$(UV) run $(PYTHON) main.py
 
 debug:
-	$(UV) run $(PYTHON) pdb -m $(SRC_DIR)
+	$(UV) run $(PYTHON) pdb
 
 clean:
 	find . -name "*.pyc" -type f -delete -print
@@ -37,14 +38,18 @@ fclean: clean
 	$(RM) .venv
 
 lint:
-	- $(UV) run flake8 $(SRC_DIR)
-	- $(UV) run mypy --warn-return-any --warn-unused-ignores --ignore-missing-imports --disallow-untyped-defs --check-untyped-defs $(SRC_DIR) 
-	- $(UV) run ruff check $(SRC_DIR)
+	- $(UV) run flake8 .
+	- $(UV) run mypy --warn-return-any \
+		--warn-unused-ignores \
+		--ignore-missing-imports \
+		--disallow-untyped-defs \
+		--check-untyped-defs .
+	- $(UV) run ruff check .
 # 	- $(UV) run ty check $(SRC_DIR)
 
 lint-strict:
-	- $(UV) run flake8 $(SRC_DIR)
-	- $(UV) run mypy --strict $(SRC_DIR)
+	- $(UV) run flake8 .
+	- $(UV) run mypy --strict .
 
 
-.PHONY: install run debug clean lint lint-strict all uv setup fclean
+.PHONY: install run debug clean fclean lint lint-strict all uv setup

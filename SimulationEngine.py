@@ -31,7 +31,7 @@ class SimulationEngine:
             if not path:
                 raise ValueError(
                     f"Drone ID: {drone_id} No Path found to the goal."
-                ) from e
+                )
 
             pathfinder.commit_path(path)
             drone.set_path(path)

@@ -50,7 +50,8 @@ class PathFinder:
                     cost=state.cost + 1.0,
                     turn=next_turn,
                     current_zone=state.current_zone,
-                    path_history=state.path_history + [state.current_zone.name],
+                    path_history=(
+                        state.path_history + [state.current_zone.name]),
                     visited_zones=state.visited_zones
                 ))
 
@@ -62,7 +63,8 @@ class PathFinder:
                 if target.is_pruned or target.zone_type == "blocked":
                     continue
                 # 再訪、Uターン不可
-                if target.name in state.visited_zones and target.name != state.current_zone.name:
+                if (target.name in state.visited_zones
+                        and target.name != state.current_zone.name):
                     continue
 
                 connection_name = f"{state.current_zone.name}-{target.name}"
@@ -71,18 +73,25 @@ class PathFinder:
 
                 # "type=restricted": 2ターン消費かつ2ターン後の予約チェック
                 if target.zone_type == "restricted":
-                    if connection.can_enter(next_turn) and target.can_enter(state.turn + 2):
+                    if (connection.can_enter(next_turn)
+                            and target.can_enter(state.turn + 2)):
                         heapq.heappush(queue, SearchState(
                             cost=state.cost + 2.0,
                             turn=state.turn + 2,
                             current_zone=target,
-                            path_history=state.path_history + [connection_name, target.name],
+                            path_history=(
+                                state.path_history
+                                + [connection_name, target.name]),
                             visited_zones=new_visited
                         ))
                 # "type=normal, priority": 1ターン消費
                 else:
-                    if connection.can_enter(next_turn) and target.can_enter(next_turn):
-                        move_cost = 0.99 if target.zone_type == "priority" else 1.0
+                    if (connection.can_enter(next_turn)
+                            and target.can_enter(next_turn)):
+                        move_cost = (
+                            0.99
+                            if target.zone_type == "priority"
+                            else 1.0)
                         heapq.heappush(queue, SearchState(
                             cost=state.cost + move_cost,
                             turn=state.turn + 1,
@@ -100,7 +109,7 @@ class PathFinder:
             各Zone, Connectionに予約する。
         """
         # 初期位置: start_zone
-        current_location_name = self.graph.start_zone.name
+        cur_location_name = self.graph.start_zone.name
 
         for i, location_name in enumerate(path_history):
             turn = i + 1
@@ -114,16 +123,18 @@ class PathFinder:
                     if connection.target_zone.name == name2:
                         connection.reserve(turn)
                         break
-                current_location_name = location_name
+                cur_location_name = location_name
 
             # Zoneへの移動、または待機時
             else:
                 self.graph.zones[location_name].reserve(turn)
                 # 移動時かつ前のターンがConnection上ではない時
-                if current_location_name != location_name and "-" not in current_location_name:
+                if (cur_location_name != location_name and
+                        "-" not in cur_location_name):
                     # Connectionを走査し、移動したZoneがあれば予約する。
-                    for connection in self.graph.zones[current_location_name].connections:
+                    for connection in (
+                            self.graph.zones[cur_location_name].connections):
                         if connection.target_zone.name == location_name:
                             connection.reserve(turn)
                             break
-                current_location_name = location_name
+                cur_location_name = location_name

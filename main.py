@@ -20,7 +20,7 @@ def main() -> None:
 
     # -------------------- Map fileのパース処理 --------------------
     try:
-        config  = parser.parse_arguments()
+        config = parser.parse_arguments()
         graph = parser.parse_file(config.map)
     except ValueError as e:
         print(f"{ERROR}Parsing error: {e}", file=sys.stderr)
@@ -51,6 +51,7 @@ def main() -> None:
     print("-------------------- Simulation Output --------------------")
     engine.run_simulation()
     print("-------------------- Fly-in System Finished --------------------")
+
 
 if __name__ == "__main__":
     try:

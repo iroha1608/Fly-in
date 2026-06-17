@@ -1,3 +1,6 @@
+import re
+
+
 class ColorManager:
     """
         TerminalVisualizer, GUIVisualizerの色を管理する。
@@ -37,7 +40,7 @@ class ColorManager:
     DEFAULT = "#FFFFFF"
 
     @classmethod
-    def get_hex(cls, color_name: str) -> str:
+    def get_hex(cls, color_name: str | None) -> str:
         """
             色名、RGBから表記の検証。
             # から始まるときはそのまま返し、
@@ -48,7 +51,7 @@ class ColorManager:
 
         color_input = color_name.strip()
 
-        if color_input.startswith("#") and len(color_name) ==  7:
+        if color_input.startswith("#") and len(color_name) == 7:
             if re.match(r"^#[0-9a-fA-F]{6}$", color_input):
                 return color_input.upper()
 
@@ -72,7 +75,7 @@ class ColorManager:
         return ""
 
     @classmethod
-    def get_ansi(cls, color_name: str) -> str:
+    def get_ansi(cls, color_name: str | None) -> str:
         """色名からTerminal用のANSIを取得する。"""
         if not color_name:
             return ""
@@ -86,7 +89,7 @@ class ColorManager:
         return cls.RESET
 
     @classmethod
-    def get_ansi_rainbow(cls, text) -> str:
+    def get_ansi_rainbow(cls, text: str) -> str:
         """textをANSIでRainbowにし文字列を返す。"""
         result: str = ""
         for i, char in enumerate(text):

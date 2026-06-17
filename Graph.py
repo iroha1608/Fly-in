@@ -32,7 +32,7 @@ class Graph:
             zone1 = self.zones[name1]
             zone2 = self.zones[name2]
 
-            two_way_reservations = defaultdict(int)
+            two_way_reservations: defaultdict[int, int] = defaultdict(int)
 
             connection1 = Connection(zone2, capacity)
             connection1.reservations = two_way_reservations

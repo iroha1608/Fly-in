@@ -3,7 +3,6 @@
     各ハブの情報とターン毎の予約状況を管理する。
 """
 from collections import defaultdict
-from dataclasses import dataclass, field
 
 
 class Zone:
@@ -27,7 +26,7 @@ class Zone:
         self.connections: list[Connection] = []
         self.is_pruned: bool = False
 
-    def can_enter(self, turn:int) -> bool:
+    def can_enter(self, turn: int) -> bool:
         """
             指定ターンにZoneに空きがあるか判定。
             Args:

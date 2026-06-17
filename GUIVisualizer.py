@@ -1,8 +1,6 @@
 """tkinterを使用してGUIに描画するGUIVisualizerを提供"""
 import tkinter as tk
-import math
 import colorsys
-from typing import Any
 
 from Graph import Graph
 from Drone import Drone
@@ -122,7 +120,8 @@ class GUIVisualizer:
     def toggle_play(self) -> None:
         """再生、一時停止切り替え"""
         self.is_playing = not self.is_playing
-        self.btn_play_pause.config(text="Pause" if self.is_playing else "Start")
+        self.btn_play_pause.config(
+            text="Pause" if self.is_playing else "Start")
 
         # 再開時に次のフレームから続行
         if self.is_playing:
@@ -291,7 +290,10 @@ class GUIVisualizer:
                 text_y = py + r + 4
                 # NW(North-West)に座標を変更
                 temp_text = self.canvas.create_text(
-                    text_x, text_y, text=text_content, font=("Helvetica", 8), anchor=tk.NW
+                    text_x,
+                    text_y,
+                    text=text_content,
+                    font=("Helvetica", 8), anchor=tk.NW
                 )
                 bbox = self.canvas.bbox(temp_text)
 
@@ -388,7 +390,9 @@ class GUIVisualizer:
 
         self.rainbow_hue = (self.rainbow_hue + 0.02) % 1.0
         rgb = colorsys.hls_to_rgb(self.rainbow_hue, 0.5, 1.0)
-        hex_color = f"#{int(rgb[0]*255):02x}{int(rgb[1]*255):02x}{int(rgb[2]*255):02x}"
+        hex_color = (
+            f"#{int(rgb[0]*255):02x}{int(rgb[1]*255):02x}"
+            "{int(rgb[2]*255):02x}")
 
         for oval_id in self.rainbow_zone_ids:
             self.canvas.itemconfig(oval_id, fill=hex_color)
