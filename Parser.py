@@ -1,5 +1,6 @@
 """コマンドライン引数をパースし、バリデーションのチェックをする。"""
 import re
+import sys
 import math
 import argparse
 from pathlib import Path
@@ -8,6 +9,8 @@ from pydantic import BaseModel, Field, ValidationError
 
 from Zone import Zone
 from Graph import Graph
+
+WARNING = "[\33[33mWARNING\33[0m]: "
 
 
 class CLIConfig(BaseModel):
@@ -140,9 +143,9 @@ class Parser:
         pattern_drones = re.compile(r"^nb_drones:\s*(-?\d+)$")
         pattern_zone = re.compile(
             r"^(start_hub|end_hub|hub):"
-            r"\s+([^\s\-]+)\s+(-?\d+)\s+(-?\d+)(?:\s+\[(.*?)\])?$")
+            r"\s+([^\s\-]+)\s+(-?\d+)\s+(-?\d+)(?:\s+\[(.*?)\](.*))?$")
         pattern_connection = re.compile(
-                r"^connection:\s+([^\s\-]+)-([^\s\-]+)(?:\s+\[(.*?)\])?$")
+                r"^connection:\s+([^\s\-]+)-([^\s\-]+)(?:\s+\[(.*?)\](.*))?$")
 
         nb_drones = 0
         start_zone = None
@@ -201,7 +204,13 @@ class Parser:
                                 f"Line {i}: Invalid zone definition format.")
 
                         # Zoneの種別、名前、座標、メタデータを取得
-                        z_prefix, name, x_str, y_str, meta_str = match.groups()
+                        z_prefix, name, x_str, y_str, meta_str, garbage = (
+                            match.groups())
+                        if garbage and garbage.strip():
+                            print(f"{WARNING}Line {i}: "
+                                "Ignored trailing characters "
+                                f"\"{garbage.strip()}\" "
+                                "after metadata.", file=sys.stderr)
                         try:
                             x, y = int(x_str), int(y_str)
                         except ValueError:
@@ -301,7 +310,12 @@ class Parser:
                                 "(Zone names cannot contain dashes)")
 
                         # Connectionの情報を取得
-                        name1, name2, meta_str = match.groups()
+                        name1, name2, meta_str, garbage = match.groups()
+                        if garbage and garbage.strip():
+                            print(f"{WARNING}Line {i}: "
+                                "Ignored trailing characters "
+                                f"\"{garbage.strip()}\" "
+                                "after metadata.", file=sys.stderr)
                         # メタデータ内にゴミ文字があったら弾く
                         try:
                             meta = self._parse_metadata(
