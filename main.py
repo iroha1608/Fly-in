@@ -47,7 +47,7 @@ def main() -> None:
 
     # --------------------------- Visualizerの起動 --------------------------
     print("---------------------- Simulation Output -----------------------")
-    engine.run_simulation()
+    engine.run_simulation(config.capacity_info)
     print("-------------------- Fly-in System Finished --------------------")
 
 

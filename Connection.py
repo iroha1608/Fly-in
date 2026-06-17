@@ -1,4 +1,5 @@
 from collections import defaultdict
+import math
 
 from Zone import Zone
 
@@ -12,6 +13,10 @@ class Connection:
         self.target_zone = target_zone
         self.max_link_capacity = max_link_capacity
         self.reservations: defaultdict[int, int] = defaultdict(int)
+
+    def get_info(self, turn: int) -> tuple[int, int]:
+        max_drone = self.max_drones if self.max_link_capacity == math.inf else int(self.max_link_capacity)
+        return self.reservations[turn], max_drone
 
     def can_enter(self, turn: int) -> bool:
         """

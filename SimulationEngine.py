@@ -37,14 +37,14 @@ class SimulationEngine:
             drone.set_path(path)
             self.drones.append(drone)
 
-    def run_simulation(self) -> None:
+    def run_simulation(self, capacity_info: bool = False) -> None:
         """
             Terminal, GUIへの描画を開始。
         """
         # Terminalの描画
         print(f"{INFO}Starting Terminal Visualizer...")
         cli = TerminalVisualizer(self.graph, self.drones)
-        cli.start()
+        cli.start(capacity_info)
 
         # GUIの描画
         print(f"{INFO}Starting GUI Visualizer...")

@@ -3,6 +3,7 @@
     各ハブの情報とターン毎の予約状況を管理する。
 """
 from collections import defaultdict
+import math
 
 
 class Zone:
@@ -25,6 +26,10 @@ class Zone:
         self.reservations: defaultdict[int, int] = defaultdict(int)
         self.connections: list[Connection] = []
         self.is_pruned: bool = False
+
+    def get_info(self, turn: int) -> tuple[int, int]:
+        max_drone = self.max_drones if self.max_drones == math.inf else int(self.max_drones)
+        return self.reservations[turn], max_drone
 
     def can_enter(self, turn: int) -> bool:
         """

@@ -20,6 +20,7 @@ class CLIConfig(BaseModel):
         default=Path("maps/original/test_map.txt"),
         description="Path to the map file"
     )
+    capacity_info: bool
 
 
 class ParserError(ValueError):
@@ -44,6 +45,11 @@ class Parser:
             "-m", "--map",
             type=str,
             help="Path to the map file"
+        )
+        parser.add_argument(
+            "-c", "--capacity-info",
+            action="store_true",
+            help="Zone, Connections capacity info"
         )
         # action="store_true" で引数が不要になる
 
