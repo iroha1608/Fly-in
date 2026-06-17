@@ -18,7 +18,7 @@ class GUIVisualizer:
         self.max_turns = (
             max(len(d.planned_path) for d in drones) if drones else 0)
 
-        # --------------- アニメーション設定 ---------------
+        # ----------------------- アニメーション設定 ------------------------
         # 1ターンの合計時間: 800ms
         self.turn_duration_ms = 800
         # フレームレート
@@ -35,7 +35,7 @@ class GUIVisualizer:
         # 再生状態のフラグ
         self.is_playing = True
 
-        # --------------- メインウィンドウの設定 ---------------
+        # ---------------------- メインウィンドウの設定 ---------------------
         self.root = tk.Tk()
         self.root.title("Fly-in Simulatier")
         self.root.configure(bg="#2D2D2D")
@@ -77,7 +77,7 @@ class GUIVisualizer:
         self.btn_prev = tk.Button(
             self.control_frame,
             text="Prev",
-            command=self.prev_turn,
+            command=self._prev_turn,
             font=("Helvetica", 14),
             bg="#444",
             fg="white",
@@ -89,7 +89,7 @@ class GUIVisualizer:
         self.btn_play_pause = tk.Button(
             self.control_frame,
             text="Pause",
-            command=self.toggle_play,
+            command=self._toggle_play,
             font=("Helvetica", 14),
             bg="#444",
             fg="white",
@@ -101,7 +101,7 @@ class GUIVisualizer:
         self.btn_next = tk.Button(
             self.control_frame,
             text="Next",
-            command=self.next_turn,
+            command=self._next_turn,
             font=("Helvetica", 14),
             bg="#444",
             fg="white",
@@ -117,17 +117,7 @@ class GUIVisualizer:
         self.rainbow_zone_ids: list = []
         self.rainbow_hue = 0.0
 
-    def toggle_play(self) -> None:
-        """再生、一時停止切り替え"""
-        self.is_playing = not self.is_playing
-        self.btn_play_pause.config(
-            text="Pause" if self.is_playing else "Start")
-
-        # 再開時に次のフレームから続行
-        if self.is_playing:
-            self.animate_turn()
-
-    def prev_turn(self) -> None:
+    def _prev_turn(self) -> None:
         """戻るボタン。一時停止し1つ前に戻る"""
         self.is_playing = False
         self.btn_play_pause.config(text="Start")
@@ -135,9 +125,22 @@ class GUIVisualizer:
         if self.current_turn > 0:
             self.current_turn -= 1
             self.current_frame = 0
-            self.update_drones_instant()
+            self._update_drones_instant()
 
-    def next_turn(self) -> None:
+    def _toggle_play(self) -> None:
+        """再生、一時停止切り替え"""
+        if not self.is_playing and self.current_turn >= self.max_turns:
+            return
+
+        self.is_playing = not self.is_playing
+        self.btn_play_pause.config(
+            text="Pause" if self.is_playing else "Start")
+
+        # 再開時に次のフレームから続行
+        if self.is_playing:
+            self._animate_turn()
+
+    def _next_turn(self) -> None:
         """進むボタン。一時停止し1つ先に進む"""
         self.is_playing = False
         self.btn_play_pause.config(text="Start")
@@ -145,11 +148,12 @@ class GUIVisualizer:
         if self.current_turn < self.max_turns:
             self.current_turn += 1
             self.current_frame = 0
-            self.update_drones_instant()
+            self._update_drones_instant()
 
-    def update_drones_instant(self) -> None:
+    def _update_drones_instant(self) -> None:
         """
             指定されたターンの位置にドローンを即移動させる
+            next_turn, prev_turnで使用
         """
         self.turn_label.config(text=f"Turn: {self.current_turn}")
         r = 5
@@ -206,6 +210,8 @@ class GUIVisualizer:
         return px, py
 
     def _get_location_coords(self, location_name: str) -> tuple[float, float]:
+        """
+        """
         if "-" in location_name:
             name1, name2 = location_name.split("-")
             z1, z2 = self.graph.zones[name1], self.graph.zones[name2]
@@ -222,7 +228,7 @@ class GUIVisualizer:
 
         return px, py
 
-    def draw_map(self) -> None:
+    def _draw_map(self) -> None:
         # Connectionの描画
         drawn_connections = set()
         for zone in self.graph.zones.values():
@@ -248,6 +254,7 @@ class GUIVisualizer:
         r = 12
         for zone in self.graph.zones.values():
             px, py = self._get_pixel_coords(zone.x, zone.y)
+            # 枝狩り済みのZoneの場合、暗く表示
             if zone.is_pruned:
                 self.canvas.create_oval(
                     px - r,
@@ -281,6 +288,7 @@ class GUIVisualizer:
                         width=2
                     )
 
+                # Zoneの名前を省略
                 text_content = zone.name
                 if len(text_content) > 12:
                     text_content = text_content.replace("restricted", "rest")
@@ -310,7 +318,7 @@ class GUIVisualizer:
                 self.canvas.tag_raise(temp_text)
                 self.canvas.itemconfig(temp_text, fill="#DDDDDD")
 
-    def init_drones(self) -> None:
+    def _init_drones(self) -> None:
         start_coords = self._get_location_coords(self.graph.start_zone.name)
         r = 5
 
@@ -325,7 +333,7 @@ class GUIVisualizer:
             )
             self.drone_shapes[drone.id] = shaped_id
 
-    def animate_turn(self) -> None:
+    def _animate_turn(self) -> None:
         """
             1ターンごとの状態を画面に反映、次のターンをスケジュールする。
             60FPSで500msのターン
@@ -334,21 +342,28 @@ class GUIVisualizer:
         if not self.is_playing:
             return
 
-        # アニメーション終了判定
+        # アニメーション終了判定チェック
+        # アニメーション開始時
+        if self.current_turn > self.max_turns:
+            self.turn_label.config(text=f"Turn: {self.max_turns} (finished)")
+            self.is_playing = False
+            self.btn_play_pause.config(text="Start")
+            return
+        # アニメーション終了時
         if self.current_frame >= self.total_frames_per_turn:
             self.current_frame = 0
             self.current_turn += 1
 
             if self.current_turn > self.max_turns:
                 self.turn_label.config(
-                    text=f"Turn: {self.max_turns} (Finished)")
+                    text=f"Turn: {self.max_turns} (finished)")
                 self.is_playing = False
                 self.btn_play_pause.config(text="Start")
                 return
 
             self.turn_label.config(text=f"Turn: {self.current_turn}")
             # 指定した時間分待ってから再開
-            self.root.after(self.turn_pause_ms, self.animate_turn)
+            self.root.after(self.turn_pause_ms, self._animate_turn)
             # 一旦returnし、afterによる呼び出しを待つ
             return
 
@@ -381,9 +396,9 @@ class GUIVisualizer:
 
         self.current_frame += 1
         # 次のフレームを描画
-        self.root.after(self.frame_delay, self.animate_turn)
+        self.root.after(self.frame_delay, self._animate_turn)
 
-    def update_rainbow_colors(self) -> None:
+    def _update_rainbow_colors(self) -> None:
         """rainbowに指定されたZoneの色を更新し続けるループ"""
         if not self.rainbow_zone_ids:
             return
@@ -397,18 +412,18 @@ class GUIVisualizer:
         for oval_id in self.rainbow_zone_ids:
             self.canvas.itemconfig(oval_id, fill=hex_color)
 
-        self.root.after(50, self.update_rainbow_colors)
+        self.root.after(50, self._update_rainbow_colors)
 
     def start(self) -> None:
         """
             Tkinterのメインループの開始。
         """
-        self.draw_map()
-        self.init_drones()
+        self._draw_map()
+        self._init_drones()
 
         # rainbowの描画開始
-        self.update_rainbow_colors()
+        self._update_rainbow_colors()
 
         # 起動後、1秒待機してからオートプレイ開始
-        self.root.after(1000, self.animate_turn)
+        self.root.after(1000, self._animate_turn)
         self.root.mainloop()
