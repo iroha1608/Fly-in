@@ -32,10 +32,10 @@ clean:
 	$(RM) .mypy_cache
 	$(RM) .pytest_cache
 	$(RM) .ruff_cache
-	$(RM) data/output/*
 
 fclean: clean
 	$(RM) .venv
+	$(RM) maps/
 
 lint:
 	- $(UV) run flake8 .
