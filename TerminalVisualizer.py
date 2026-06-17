@@ -15,7 +15,7 @@ class TerminalVisualizer:
             max(len(d.planned_path) for d in drones) if drones else 0
         )
 
-    def _colorize(self, zone_name: str | None) -> str:
+    def _colorize(self, zone_name: str) -> str:
         """色名、RGBからANSIに変換"""
         if zone_name in self.graph.zones:
             # Zoneのcolorを取得
@@ -55,4 +55,4 @@ class TerminalVisualizer:
                     turn_output.append(f"{drone.id}-{colored_location}")
 
             if turn_output:
-                print(f"Turn{turn}: " + " ".join(turn_output))
+                print(" ".join(turn_output))

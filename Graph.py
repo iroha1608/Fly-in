@@ -5,19 +5,23 @@ from Connection import Connection
 
 
 class Graph:
-    def __init__(self) -> None:
+    def __init__(
+        self, nb_drones: int,
+        start_zone: Zone, end_zone: Zone
+    ) -> None:
         """
             nb_drones: 全体のドローンの数
             start_zone: スタート
             end_zone: ゴール
             zones: マップ全体のZoneの辞書
         """
-        self.nb_drones: int = 0
-        self.start_zone: Zone | None = None
-        self.end_zone: Zone | None = None
+        self.nb_drones: int = nb_drones
+        self.start_zone: Zone = start_zone
+        self.end_zone: Zone = end_zone
         self.zones: dict[str, Zone] = {}
 
     def add_zone(self, zone: Zone) -> None:
+        """"""
         self.zones[zone.name] = zone
 
     def add_connection(self, name1: str, name2: str, capacity: int) -> None:
