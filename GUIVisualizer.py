@@ -1,4 +1,4 @@
-"""tkinterを使用してGUIに描画するGUIVisualizerを提供"""
+"""GUIVisualizer module for the Fly-in System."""
 import tkinter as tk
 import colorsys
 
@@ -8,9 +8,45 @@ from ColorManager import ColorManager
 
 
 class GUIVisualizer:
-    """
+    """GUI Visualizer class for the Fly-in System.
+
+    This class is responsible for visualizing the simulation in a graphical
+    user interface (GUI) using Tkinter.
+
+    Attributes:
+        graph (Graph): The graph representing the zones and connections.
+        drones (list[Drone]):
+            A list of Drone objects participating in the simulation.
+        current_turn (int): The current turn number in the simulation.
+        max_turns (int): The maximum number of turns in the simulation.
+        turn_duration_ms (int): The duration of one turn in milliseconds.
+        fps (int): The frames per second for the animation.
+        frame_delay (int): The delay between frames in milliseconds.
+        current_frame (int): The current frame number in the animation.
+        total_frames_per_turn (int): The total number of frames per turn.
+        turn_pause_ms (int): The pause duration between turns in milliseconds.
+        is_playing (bool): A flag indicating whether the simulation is playing.
+        root (tk.Tk): The main Tkinter window.
+        canvas (tk.Canvas): The Tkinter canvas for drawing the simulation.
+        turn_label (tk.Label): The label displaying the current turn number.
+        control_frame (tk.Frame): The frame containing control buttons.
+        btn_prev (tk.Button): The button to go to the previous turn.
+        btn_play_pause (tk.Button): The button to toggle play/pause.
+        btn_next (tk.Button): The button to go to the next turn.
+        drone_shapes (dict[str, int]):
+            A dictionary mapping drone IDs to their corresponding shape IDs
+            on the canvas.
+
     """
     def __init__(self, graph: Graph, drones: list[Drone]) -> None:
+        """Initializes the GUIVisualizer with the given graph and drones.
+
+        Args:
+            graph (Graph): The graph representing the zones and connections.
+            drones (list[Drone]):
+                A list of Drone objects participating in the simulation.
+
+        """
         self.graph = graph
         self.drones = drones
 
@@ -118,7 +154,12 @@ class GUIVisualizer:
         self.rainbow_hue = 0.0
 
     def _prev_turn(self) -> None:
-        """戻るボタン。一時停止し1つ前に戻る"""
+        """previous bottun.
+
+        Stop the animation and move to the previous turn,
+        updating the drone positions instantly.
+
+        """
         self.is_playing = False
         self.btn_play_pause.config(text="Start")
 
@@ -128,7 +169,11 @@ class GUIVisualizer:
             self._update_drones_instant()
 
     def _toggle_play(self) -> None:
-        """再生、一時停止切り替え"""
+        """Start/Pause button.
+
+        Toggle the animation state between playing and paused.
+
+        """
         if not self.is_playing and self.current_turn >= self.max_turns:
             return
 
@@ -141,7 +186,12 @@ class GUIVisualizer:
             self._animate_turn()
 
     def _next_turn(self) -> None:
-        """進むボタン。一時停止し1つ先に進む"""
+        """Next button.
+
+        Stop the animation and move to the next turn,
+        updating the drone positions instantly.
+
+        """
         self.is_playing = False
         self.btn_play_pause.config(text="Start")
 
@@ -151,10 +201,7 @@ class GUIVisualizer:
             self._update_drones_instant()
 
     def _update_drones_instant(self) -> None:
-        """
-            指定されたターンの位置にドローンを即移動させる
-            next_turn, prev_turnで使用
-        """
+        """Update the positions of all drones instantly to the current turn."""
         self.turn_label.config(text=f"Turn: {self.current_turn}")
         r = 5
         for drone in self.drones:
@@ -171,9 +218,7 @@ class GUIVisualizer:
             )
 
     def _calculate_scale_and_offset(self) -> None:
-        """
-            Zoneのすべての(x, y)座標を見て、Canvasの80%に収める。
-        """
+        """Calculate the scale and offset to fit all zones."""
         if not self.graph.zones:
             self.scale = 100.0
             self.offset_x, self.offset_y = self.cw / 2, self.ch / 2
@@ -210,7 +255,17 @@ class GUIVisualizer:
         return px, py
 
     def _get_location_coords(self, location_name: str) -> tuple[float, float]:
-        """
+        """get_location_coords returns the pixel coordinates.
+
+        Returns the pixel coordinates for a given location name, which can be
+        either a zone name or a connection name (formatted as "zone1-zone2").
+
+        Args:
+            location_name (str): The name of the location (zone or connection).
+
+        Returns:
+            tuple[float, float]: The pixel coordinates (x, y) of the location.
+
         """
         if "-" in location_name:
             name1, name2 = location_name.split("-")
@@ -229,6 +284,12 @@ class GUIVisualizer:
         return px, py
 
     def _draw_map(self) -> None:
+        """Draws the zones and connections on the canvas.
+
+        This method draws the zones and connections on the canvas, taking into
+        account their properties such as color and pruning status.
+
+        """
         # Connectionの描画
         drawn_connections = set()
         for zone in self.graph.zones.values():
@@ -319,6 +380,12 @@ class GUIVisualizer:
                 self.canvas.itemconfig(temp_text, fill="#DDDDDD")
 
     def _init_drones(self) -> None:
+        """Initializes the drone shapes.
+
+        This method creates oval shapes on the canvas to represent each drone,
+        placing them at the starting location of the simulation.
+
+        """
         start_coords = self._get_location_coords(self.graph.start_zone.name)
         r = 5
 
@@ -334,9 +401,11 @@ class GUIVisualizer:
             self.drone_shapes[drone.id] = shaped_id
 
     def _animate_turn(self) -> None:
-        """
-            1ターンごとの状態を画面に反映、次のターンをスケジュールする。
-            60FPSで500msのターン
+        """Animates the drones' movement for the current turn.
+
+        This method updates the positions of the drones on the canvas based on
+        the current turn and frame, applying easing for smooth transitions.
+
         """
         # 一時停止判定
         if not self.is_playing:
@@ -399,7 +468,7 @@ class GUIVisualizer:
         self.root.after(self.frame_delay, self._animate_turn)
 
     def _update_rainbow_colors(self) -> None:
-        """rainbowに指定されたZoneの色を更新し続けるループ"""
+        """Updates the colors of rainbow zones."""
         if not self.rainbow_zone_ids:
             return
 
@@ -415,9 +484,7 @@ class GUIVisualizer:
         self.root.after(50, self._update_rainbow_colors)
 
     def start(self) -> None:
-        """
-            Tkinterのメインループの開始。
-        """
+        """Starts the GUI visualization of the simulation."""
         self._draw_map()
         self._init_drones()
 

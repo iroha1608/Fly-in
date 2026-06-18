@@ -1,9 +1,21 @@
+"""ColorManager module for managing colors in the terminal."""
 import re
 
 
 class ColorManager:
-    """
-        TerminalVisualizer, GUIVisualizerの色を管理する。
+    """ColorManager class for managing colors in the terminal.
+
+    This class provides methods to convert color names and hex values to ANSI
+    escape codes for terminal output. It also includes a predefined set of
+    colors and a rainbow color sequence for visual effects.
+
+    Attributes:
+        COLORS (dict): A dictionary mapping color names to their hex values.
+        RAINBOW (list):
+            A list of hex values representing a rainbow color sequence.
+        RESET (str): The ANSI escape code to reset terminal colors.
+        DEFAULT (str): The default hex color value.
+
     """
     COLORS = {
         "red": "#FF3C3C",
@@ -41,10 +53,19 @@ class ColorManager:
 
     @classmethod
     def get_hex(cls, color_name: str | None) -> str:
-        """
-            色名、RGBから表記の検証。
-            # から始まるときはそのまま返し、
-            文字列の時は辞書から探す。
+        """Returns the hex value for a given color name or hex string.
+
+        If the input is a valid hex string (e.g., "#RRGGBB"), it returns the
+        uppercase version of that string. If the input is a recognized
+        color name, it returns the corresponding hex value. If the input is
+        None or not recognized, it returns the default hex value.
+
+        Args:
+            color_name (str | None): The color name or hex string to convert.
+
+        Returns:
+            str: The corresponding hex value or the default hex value.
+
         """
         if not color_name:
             return cls.DEFAULT
@@ -59,7 +80,15 @@ class ColorManager:
 
     @classmethod
     def hex_to_ansi(cls, color_name: str) -> str:
-        """RGBの文字列をANSIに変換する。 """
+        """Converts a hex color string to an ANSI escape code.
+
+        Args:
+            color_name (str): The hex color string (e.g., "#RRGGBB").
+
+        Returns:
+            str: The corresponding ANSI escape code.
+
+        """
         hex_color = color_name.lstrip("#")
         if len(hex_color) != 6:
             return ""
@@ -76,7 +105,16 @@ class ColorManager:
 
     @classmethod
     def get_ansi(cls, color_name: str | None) -> str:
-        """色名からTerminal用のANSIを取得する。"""
+        """Returns the ANSI escape code for a given color name or hex string.
+
+        Args:
+            color_name (str | None): The color name or hex string to convert.
+
+        Returns:
+            str: The corresponding ANSI escape code or an empty string if the
+            input is None or invalid.
+
+        """
         if not color_name:
             return ""
 
@@ -85,12 +123,25 @@ class ColorManager:
 
     @classmethod
     def get_ansi_reset(cls) -> str:
-        """TerminalのANSIをRESETする文字列を返す。"""
+        """Returns the ANSI escape code to reset terminal colors.
+
+        Returns:
+            str: The ANSI escape code to reset terminal colors.
+
+        """
         return cls.RESET
 
     @classmethod
     def get_ansi_rainbow(cls, text: str) -> str:
-        """textをANSIでRainbowにし文字列を返す。"""
+        """Returns the input text with a rainbow color effect applied.
+
+        Args:
+            text (str): The input text to colorize.
+
+        Returns:
+            str: The input text with a rainbow color effect applied.
+
+        """
         result: str = ""
         for i, char in enumerate(text):
             result += cls.hex_to_ansi(cls.RAINBOW[i % len(cls.RAINBOW)]) + char

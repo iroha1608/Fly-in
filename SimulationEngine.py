@@ -1,3 +1,11 @@
+"""SimulationEngine module for the Fly-in System.
+
+This module contains the SimulationEngine class, which is responsible for
+managing the simulation of drones navigating through a graph. It handles
+the pathfinding for each drone and visualizes the simulation in both
+terminal and GUI formats.
+
+"""
 from Graph import Graph
 from Drone import Drone
 from PathFinder import PathFinder
@@ -9,17 +17,30 @@ WARNING = "[\33[33mWARNING\33[0m]: "
 
 
 class SimulationEngine:
-    """
-        Terminal, GUIへの描写をシミュレーションするクラス。
+    """SimulationEngine class for the Fly-in System.
+
+    This class is responsible for managing the simulation of drones navigating
+    through a graph. It handles the pathfinding for each drone and visualizes
+    the simulation in both terminal and GUI formats.
+
+    Attributes:
+        graph (Graph): The graph representing the zones and connections.
+        drones (list[Drone]):
+            A list of Drone objects participating in the simulation.
+
     """
     def __init__(self, graph: Graph) -> None:
+        """Initializes the SimulationEngine with the given graph.
+
+        Args:
+            graph (Graph): The graph representing the zones and connections.
+
+        """
         self.graph = graph
         self.drones: list[Drone] = []
 
     def find_path(self) -> None:
-        """
-            Graphから最短経路を取得する。
-        """
+        """Finds paths for all drones in the simulation."""
         pathfinder = PathFinder(self.graph)
 
         for i in range(1, self.graph.nb_drones + 1):
@@ -37,14 +58,12 @@ class SimulationEngine:
             drone.set_path(path)
             self.drones.append(drone)
 
-    def run_simulation(self, capacity_info: bool = False) -> None:
-        """
-            Terminal, GUIへの描画を開始。
-        """
+    def run_simulation(self) -> None:
+        """Runs simulation and visualizes the output in terminal and GUI."""
         # Terminalの描画
         print(f"{INFO}Starting Terminal Visualizer...")
         cli = TerminalVisualizer(self.graph, self.drones)
-        cli.start(capacity_info)
+        cli.start()
 
         # GUIの描画
         print(f"{INFO}Starting GUI Visualizer...")

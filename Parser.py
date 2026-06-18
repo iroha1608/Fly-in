@@ -1,4 +1,13 @@
-"""コマンドライン引数をパースし、バリデーションのチェックをする。"""
+"""Comand-line interface and map file parser for the Fly-in Drones Simulation.
+
+Parser for handling map file parsing and command-line argument parsing.
+This module defines the Parser class, which is responsible for reading and
+validating the map file, extracting zone and connection information,
+and ensuring the integrity of the graph structure.
+It also includes the CLIConfig class for command-line argument validation and
+the ParserError class for custom error handling during parsing.
+
+"""
 import re
 import sys
 import math
@@ -15,31 +24,50 @@ WARNING = "[\33[33mWARNING\33[0m]: "
 
 
 class CLIConfig(BaseModel):
-    """コマンドライン引数の情報"""
+    """Configuration model for command-line arguments using Pydantic.
+
+    Attributes:
+        map (Path): Path to the map file.
+
+    """
     map: Path = Field(
         default=Path("maps/original/test_map.txt"),
         description="Path to the map file"
     )
-    capacity_info: bool
 
 
 class ParserError(ValueError):
-    """パース中に発生したエラーを行番号とともに保持するカスタムエラー"""
+    """Custom exception for errors encountered during parsing.
+
+    This exception is raised when the parser encounters an error in the
+    map file format or when validation fails. It provides a clear indication of
+    the specific issue encountered during parsing, allowing for easier
+    debugging and error handling in the Fly-in Drones Simulation.
+
+    """
     pass
 
 
 class Parser:
-    """Parser class for handling map file parsing and command-line argument parsing.
+    """Parser class for handling map parsing and command-line argument parsing.
 
     This class is responsible for reading the map file, extracting zone and
     connection information, validating the integrity of the graph structure,
     and ensuring that the command-line arguments are correctly parsed and
     validated. It provides methods for parsing the map file, pruning dead-end
     zones, and validating connectivity between the start and end zones.
-        
-    
+
+    Attributes:
+        seen_connections (set):
+            A set to track seen connections to prevent duplicates.
+        VALID_ZONE_KEYS (set): A set of valid metadata keys for zones.
+        VALID_ZONE_TYPE (set): A set of valid zone types.
+        VALID_CONNECTIONS_KEYS (set):
+            A set of valid metadata keys for connections.
+
     """
     def __init__(self) -> None:
+        """Initialize the Parser with default values and validation sets."""
         self.seen_connections: set[str | Any] = set()
         self.VALID_ZONE_KEYS = {"zone",  "color", "max_drones"}
         self.VALID_ZONE_TYPE = {"normal", "blocked", "restricted", "priority"}
@@ -47,18 +75,19 @@ class Parser:
 
     @staticmethod
     def parse_arguments() -> CLIConfig:
-        """コマンドライン引数をパースし、CLIConfigで検証し返す。"""
+        """parse command-line arguments.
+
+        Returns:
+            CLIConfig: A validated configuration object containing the parsed
+            command-line arguments.
+
+        """
         parser = argparse.ArgumentParser(
             description="Fly-in Drones Simulation")
         parser.add_argument(
             "-m", "--map",
             type=str,
             help="Path to the map file"
-        )
-        parser.add_argument(
-            "-c", "--capacity-info",
-            action="store_true",
-            help="Zone, Connections capacity info"
         )
         # action="store_true" で引数が不要になる
 
@@ -77,7 +106,20 @@ class Parser:
 
     @staticmethod
     def _parse_metadata(metadata_str: str) -> dict[str, str]:
-        """"""
+        """Parse metadata string into a dictionary.
+
+        parse metadata string in the format "[key1=value1 key2=value2 ...]"
+        into a dictionary.
+
+        Args:
+            metadata_str (str): The metadata string to parse.
+
+        Returns:
+            dict[str, str]:
+                A dictionary containing the parsed metadata key-value pairs.
+
+        """
+
         metadata: dict[str, str] = {}
         if not metadata_str:
             return metadata
@@ -98,9 +140,17 @@ class Parser:
 
     @staticmethod
     def _prune_dead_end(graph: Graph) -> None:
-        """
-            行き止まりのノードを探索時に含めないように、
-            is_pruned = Trueにする。
+        """Prune dead-end zones from the graph.
+
+        This method iteratively removes zones that are dead-ends, meaning they
+        have only one active connection (or none) to other zones. It continues
+        pruning until no more dead-end zones can be removed.
+        Start and end zones are not pruned, and zones that have already
+        been pruned are skipped.
+
+        Args:
+            graph (Graph): The graph object containing zones and connections.
+
         """
         while True:
             removed_any = False
@@ -129,7 +179,18 @@ class Parser:
 
     @staticmethod
     def _validate_connectivity(graph: Graph) -> None:
-        """GraphからStart -> Endまで到達可能なマップかチェック"""
+        """Validate connectivity from start to end zone.
+
+        This method checks if there is a valid path from the start zone to the
+        end zone in the graph, considering only active zones and connections.
+
+        Args:
+            graph (Graph): The graph object containing zones and connections.
+
+        Raises:
+            ParserError: If no valid path exists from start to end zone.
+
+        """
         if not graph.start_zone or not graph.end_zone:
             raise ParserError(
                 "Map validation failed: Missing start_hub or end_hub")
@@ -154,7 +215,23 @@ class Parser:
         )
 
     def parse_file(self, filepath: Path) -> Graph:
-        """
+        """Parse the map file and construct a Graph object.
+
+        Parses the map file specified by the filepath, extracting zone and
+        connection information, validating the integrity of
+        the graph structure, and returning a Graph object representing
+        the parsed map.
+
+        Args:
+            filepath (Path): The path to the map file to be parsed.
+
+        Returns:
+            Graph: A Graph object representing the parsed map.
+
+        Raises:
+            ParserError: If any validation or parsing error occurs during the
+            processing of the map file.
+
         """
         pattern_drones = re.compile(r"^nb_drones:\s*(-?\d+)$")
         pattern_zone = re.compile(
@@ -163,9 +240,9 @@ class Parser:
         pattern_connection = re.compile(
                 r"^connection:\s+([^\s\-]+)-([^\s\-]+)(?:\s+\[(.*?)\](.*))?$")
 
-        nb_drones = 0
-        start_zone = None
-        end_zone = None
+        nb_drones: int = 0
+        start_zone: Zone | None = None
+        end_zone: Zone | None = None
         zones: dict[str, Zone] = {}
         connections_data = []
         seen_coordinates = set()

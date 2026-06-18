@@ -8,7 +8,7 @@ RM		:= rm -rf
 all: install
 
 # uvのインストール
-uv:
+uv-install:
 	curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # 仮想環境の作成、依存関係のインストール
@@ -52,4 +52,4 @@ lint-strict:
 	- $(UV) run mypy --strict .
 
 
-.PHONY: install run debug clean fclean lint lint-strict all uv setup
+.PHONY: install run debug clean fclean lint lint-strict all uv setup uv-install

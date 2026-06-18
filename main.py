@@ -1,3 +1,9 @@
+"""Fly-in System main program.
+
+This program is the entry point for the Fly-in System.
+Initializes the system, parses the map file, and starts the simulation engine.
+
+"""
 import sys
 import time
 
@@ -11,6 +17,13 @@ TIME = 0.2
 
 
 def main() -> None:
+    """
+
+    Main function to start the Fly-in System.
+    Initializes the parser, loads the map data, starts the simulation engine,
+    finds the shortest path, and runs the simulation with visual output.
+
+    """
     print("-------------------- Fly-in System Started ---------------------")
 
     # ------------------------ Map fileのパース処理 -------------------------
@@ -47,7 +60,7 @@ def main() -> None:
 
     # --------------------------- Visualizerの起動 --------------------------
     print("---------------------- Simulation Output -----------------------")
-    engine.run_simulation(config.capacity_info)
+    engine.run_simulation()
     print("-------------------- Fly-in System Finished --------------------")
 
 

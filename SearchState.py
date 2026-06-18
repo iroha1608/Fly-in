@@ -1,3 +1,10 @@
+"""PathFinding SearchState class for the Fly-in System.
+
+This class represents the state of the search during pathfinding.
+It includes the current cost, turn number, current zone, path history,
+and visited zones.
+
+"""
 from dataclasses import dataclass, field
 
 from Zone import Zone
@@ -5,9 +12,15 @@ from Zone import Zone
 
 @dataclass(order=True)
 class SearchState:
-    """
-        等価判定(__eq__)の他、特殊メソッド(__lt__)が生成される。
-        定義順(cost -> turn -> ...)での比較。
+    """PathFinding SearchState class for the Fly-in System.
+
+    Attributes:
+        cost (float): The current cost of the path.
+        turn (int): The current turn number.
+        current_zone (Zone): The current zone in the pathfinding process.
+        path_history (list[str]): The history of zones visited in the path.
+        visited_zones (set[str]): A set of zones that have been visited.
+
     """
     cost: float
     turn: int = field(compare=False)

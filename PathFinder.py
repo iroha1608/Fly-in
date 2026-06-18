@@ -1,3 +1,4 @@
+"""PathFinder Class for finding paths in a drone simulation."""
 import heapq
 import math
 
@@ -6,16 +7,28 @@ from SearchState import SearchState
 
 
 class PathFinder:
-    """
+    """PathFinder Class for finding paths in a drone simulation.
+
+        Attributes:
+            graph (Graph):
+                The graph representing the drone simulation environment.
+
     """
     def __init__(self, graph: Graph) -> None:
         self.graph = graph
 
     def find_path_for_single_drone(self, start_turn: int = 0) -> list[str]:
-        """
-            1機のドローンに対するダイクストラ法を用いた経路探索
-            Returns:
-                各ターンでのZone, Connectionのリスト
+        """find_path_for_single_drone finds a path.
+
+        Args:
+            start_turn (int, optional):
+                The turn at which the drone starts moving. Defaults to 0.
+
+        Returns:
+            list[str]: A list of zone and connection names representing the
+            path from the start zone to the end zone. If no path is found,
+            returns an empty list.
+
         """
         queue: list[SearchState] = []
         heapq.heappush(queue, SearchState(
@@ -104,9 +117,12 @@ class PathFinder:
         return []
 
     def commit_path(self, path_history: list[str]) -> None:
-        """
-            SearchStateから確定したpathを取り出し、
-            各Zone, Connectionに予約する。
+        """commit_path reserves the zones and connections along the given path.
+
+        Args:
+            path_history (list[str]): A list of zone and connection names
+            representing the path to be reserved.
+
         """
         # 初期位置: start_zone
         cur_location_name = self.graph.start_zone.name
