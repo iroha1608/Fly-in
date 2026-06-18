@@ -29,7 +29,16 @@ class ParserError(ValueError):
 
 
 class Parser:
-    """"""
+    """Parser class for handling map file parsing and command-line argument parsing.
+
+    This class is responsible for reading the map file, extracting zone and
+    connection information, validating the integrity of the graph structure,
+    and ensuring that the command-line arguments are correctly parsed and
+    validated. It provides methods for parsing the map file, pruning dead-end
+    zones, and validating connectivity between the start and end zones.
+        
+    
+    """
     def __init__(self) -> None:
         self.seen_connections: set[str | Any] = set()
         self.VALID_ZONE_KEYS = {"zone",  "color", "max_drones"}
